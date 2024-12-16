@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTA V Catalog</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        header {
+            background-color: #333;
+            padding: 20px;
+            text-align: center;
+        }
+        header h1 {
+            color: #e53935;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #444;
+            padding: 10px;
+        }
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            margin: 0 15px;
+        }
+        nav a:hover {
+            color: #e53935;
+        }
+        .container {
+            padding: 20px;
+        }
+        .card {
+            background-color: #2c2c2c;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px;
+        }
+        .card h3 {
+            color: #e53935;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #e53935;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .button:hover {
+            background-color: #ff6f61;
+        }
+        footer {
+            background-color: #333;
+            text-align: center;
+            padding: 10px;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>GTA V Catalog</h1>
+    </header>
+
+    <nav>
+        <a href="#catalog">Каталог</a>
+        <a href="#about">О нас</a>
+        <a href="#order">Заказать</a>
+    </nav>
+
+    <div class="container" id="catalog">
+        <h2>Каталог товаров</h2>
+        <div class="card">
+            <h3>Название товара 1</h3>
+            <p>Описание товара 1. Цена: $1000.</p>
+            <a href="#order" class="button">Заказать</a>
+        </div>
+        <div class="card">
+            <h3>Название товара 2</h3>
+            <p>Описание товара 2. Цена: $2000.</p>
+            <a href="#order" class="button">Заказать</a>
+        </div>
+    </div>
+
+    <div class="container" id="about">
+        <h2>О нас</h2>
+        <p>Мы предоставляем лучший ассортимент товаров для GTA V. Высокое качество и надежность — наш приоритет.</p>
+    </div>
+
+    <div class="container" id="order">
+        <h2>Заказать</h2>
+        <p>Чтобы сделать заказ, заполните нашу <a href="https://forms.google.com" target="_blank" class="button">Google Форму</a>.</p>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 GTA V Catalog. Все права защищены.</p>
+    </footer>
+</body>
+</html>
