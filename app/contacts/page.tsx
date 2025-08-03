@@ -144,7 +144,6 @@ export default function Contacts() {
             <ul className="space-y-2">
               <li>Jerry — 735-2879</li>
               <li>Jared — 262-7153</li>
-              <li>Gracie — 658-0651</li>
             </ul>
           </CardContent>
         </Card>

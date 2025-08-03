@@ -30,7 +30,7 @@ export default function ShootingRange() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p>Стоимость 1 (одного) захода для тренировки в тире: $ 1000</p>
+              <p>Стоимость 1 (одного) захода для тренировки в тире: от $ 2000</p>
               <p>В стоимость входит аренда пистолета Beretta M9 и 100 патронов.</p>
             </CardContent>
           </Card>
