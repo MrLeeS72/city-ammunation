@@ -1,5 +1,6 @@
 import Header from "./components/Header"
 import Link from "next/link"
+import DbConnectionTest from "./components/DbConnectionTest" // Импортируем новый компонент
 
 export default function Home() {
   return (
@@ -54,6 +55,9 @@ export default function Home() {
             Вакансии
           </Link>
         </div>
+
+        {/* Добавляем компонент для проверки подключения к БД */}
+        <DbConnectionTest />
       </main>
       <footer className="bg-gray-800 text-white py-4 text-center">
         <p>&copy; 2025 City Ammu-Nation. Все права защищены.</p>
