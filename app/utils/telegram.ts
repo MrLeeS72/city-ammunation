@@ -1,4 +1,6 @@
-interface OrderData {
+import { TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } from "@/lib/env" // Импортируем из lib/env
+
+interface TelegramOrderData {
   customerInfo: {
     firstName: string
     lastName: string
@@ -18,105 +20,66 @@ interface OrderData {
   orderDate: string
 }
 
-export async function sendOrderToTelegram(orderData: OrderData): Promise<{ success: boolean; error?: string }> {
-  // Теперь эти переменные будут доступны только на сервере, так как у них нет префикса NEXT_PUBLIC_
-  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-  const CHAT_ID = process.env.TELEGRAM_CHAT_ID
+export async function sendTelegramMessage(message: string): Promise<{ success: boolean; error?: string }> {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.error("Telegram bot token or chat ID is not set.")
+    return { success: false, error: "Telegram bot token or chat ID is not set." }
+  }
 
-  if (!BOT_TOKEN || !CHAT_ID) {
-    console.error("ОШИБКА: Токен бота Telegram или ID чата не настроены в переменных окружения сервера.")
-    return {
-      success: false,
-      error: "Токен бота Telegram или ID чата не настроены. Пожалуйста, настройте переменные окружения на Vercel.",
-    }
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`
+  const params = {
+    chat_id: TELEGRAM_CHAT_ID,
+    text: message,
+    parse_mode: "HTML",
   }
 
   try {
-    console.log("Попытка отправить заказ в Telegram...")
-
-    const customer = orderData.customerInfo
-    const items = orderData.items
-
-    // Формируем сообщение для Telegram
-    let messageText = `*НОВЫЙ ЗАКАЗ В AMMU-NATION*\n\n`
-    messageText += `*Дата заказа:* ${orderData.orderDate}\n\n`
-    messageText += `*Данные покупателя:*\n`
-    messageText += `Имя: ${customer.firstName} ${customer.lastName}\n`
-    messageText += `Телефон: ${customer.phone}\n`
-    messageText += `ID Карта: ${customer.idCard}\n`
-    messageText += `Почтовый адрес: ${customer.discordNickname}\n\n`
-    messageText += `*Детали заказа:*\n`
-
-    items.forEach((item, index) => {
-      messageText += `${index + 1}. ${item.name} x${item.quantity} (${item.price.toLocaleString()}$)\n`
-      if (item.ammoQuantity && item.ammoQuantity > 0) {
-        messageText += `   Патроны: x${item.ammoQuantity} пачек (${item.ammoPrice?.toLocaleString()}$/пачка)\n`
-      }
-    })
-
-    messageText += `\n*Общая сумма:* ${orderData.totalPrice.toLocaleString()}$`
-
-    // Экранируем специальные символы для MarkdownV2
-    messageText = messageText.replace(/([_*[\]()~`>#+\-=|{}.!])/g, "\\$1")
-    // Но не экранируем звездочки, которые используются для жирного текста
-    messageText = messageText.replace(/\\\*/g, "*")
-    messageText = messageText.replace(/\\_/g, "_")
-
-    const telegramApiUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`
-
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000) // Таймаут 15 секунд
-
-    const response = await fetch(telegramApiUrl, {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: messageText,
-        parse_mode: "MarkdownV2", // Используем MarkdownV2 для форматирования
-      }),
-      signal: controller.signal,
+      body: JSON.stringify(params),
     })
 
-    clearTimeout(timeoutId)
+    const data = await response.json()
 
     if (!response.ok) {
-      const errorData = await response.json()
-      console.error("Ошибка Telegram API:", response.status, response.statusText, errorData)
-      throw new Error(`Ошибка Telegram API: ${errorData.description || response.statusText}`)
+      console.error("Failed to send Telegram message:", data)
+      return { success: false, error: data.description || "Unknown Telegram API error" }
     }
 
-    const result = await response.json()
-    console.log("Ответ от Telegram API:", result)
-
-    if (result.ok) {
-      return { success: true }
-    } else {
-      return { success: false, error: result.description || "Неизвестная ошибка Telegram." }
-    }
-  } catch (error) {
-    console.error("Ошибка при отправке заказа в Telegram (catch блок):", error)
-
-    if (error instanceof Error) {
-      if (error.name === "AbortError") {
-        return {
-          success: false,
-          error:
-            "Превышено время ожидания запроса (15 секунд). Проверьте подключение к интернету или работу Telegram API.",
-        }
-      }
-      if (error.message.includes("Failed to fetch")) {
-        return {
-          success: false,
-          error:
-            "Ошибка сети. Убедитесь, что у вас есть подключение к интернету и Telegram API доступен. Проверьте консоль браузера (вкладка Network) для деталей.",
-        }
-      }
-      return { success: false, error: "Неизвестная ошибка при отправке заказа в Telegram." }
-    }
-
-    return { success: false, error: "Неизвестная ошибка при отправке заказа в Telegram." }
+    return { success: true }
+  } catch (error: any) {
+    console.error("Error sending Telegram message:", error)
+    return { success: false, error: error.message || "Network error" }
   }
+}
+
+export function formatOrderForTelegram(order: TelegramOrderData): string {
+  let message = `<b>Новый заказ в City Ammu-Nation!</b>\n\n`
+
+  message += `<b>Информация о покупателе:</b>\n`
+  message += `Имя: ${order.customerInfo.firstName} ${order.customerInfo.lastName}\n`
+  message += `Телефон: ${order.customerInfo.phone}\n`
+  message += `ID Карта: ${order.customerInfo.idCard}\n`
+  message += `Discord: ${order.customerInfo.discordNickname}\n\n`
+
+  message += `<b>Детали заказа:</b>\n`
+  order.items.forEach((item, index) => {
+    const itemTotal = item.price * item.quantity
+    const ammoTotal = (item.ammoQuantity || 0) * (item.ammoPrice || 0)
+    const totalItemPrice = itemTotal + ammoTotal
+
+    message += `${index + 1}. ${item.name} (x${item.quantity}) - $${itemTotal.toLocaleString()}\n`
+    if (item.ammoQuantity && item.ammoQuantity > 0) {
+      message += `   + Патроны (x${item.ammoQuantity} пачек) - $${ammoTotal.toLocaleString()}\n`
+    }
+    message += `   Итого за позицию: $${totalItemPrice.toLocaleString()}\n`
+  })
+
+  message += `\n<b>Общая сумма заказа: $${order.totalPrice.toLocaleString()}</b>\n`
+  message += `Дата заказа: ${order.orderDate}\n`
+
+  return message
 }

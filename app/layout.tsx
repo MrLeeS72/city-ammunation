@@ -1,32 +1,28 @@
 import type React from "react"
-import "./globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import "./globals.css"
 import { AuthProvider } from "./contexts/AuthContext"
 import { CartProvider } from "./contexts/CartContext"
-// import { OrderHistoryProvider } from "./contexts/OrderHistoryContext" // Удаляем импорт OrderHistoryProvider
 
-const inter = Inter({ subsets: ["latin", "cyrillic"] })
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "City Ammu-Nation",
-  description: "Каталог оружия и аксессуаров Ammu-Nation",
+  description: "Ваш надежный поставщик оружия, боеприпасов и снаряжения в Лос-Сантосе.",
     generator: 'v0.dev'
 }
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
     <html lang="ru">
-      <body className={`${inter.className} bg-gray-100 text-gray-900`}>
+      <body className={inter.className}>
         <AuthProvider>
-          <CartProvider>
-            {/* <OrderHistoryProvider>{children}</OrderHistoryProvider> */} {/* Удаляем OrderHistoryProvider */}
-            {children}
-          </CartProvider>
+          <CartProvider>{children}</CartProvider>
         </AuthProvider>
       </body>
     </html>

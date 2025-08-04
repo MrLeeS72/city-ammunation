@@ -1,6 +1,6 @@
 "use server"
 
-import sql from "@/lib/db"
+import { supabaseServer } from "@/lib/db" // Импортируем серверный клиент Supabase
 import { put, del } from "@vercel/blob"
 import { revalidatePath } from "next/cache"
 import { v4 as uuidv4 } from "uuid"
@@ -20,14 +20,36 @@ interface UserProfile {
  */
 export async function getProfile(userId: string): Promise<UserProfile | null> {
   try {
-    const [profile] = await sql<UserProfile[]>`
-      SELECT id, first_name as "firstName", last_name as "lastName", phone, id_card as "idCard", discord_nickname as "discordNickname", profile_picture_url as "profilePictureUrl"
-      FROM profiles
-      WHERE id = ${userId}
-    `
-    return profile || null
+    const { data, error } = await supabaseServer
+      .from("profiles")
+      .select("id, first_name, last_name, phone, id_card, discord_nickname, profile_picture_url")
+      .eq("id", userId)
+      .single() // Ожидаем одну запись
+
+    if (error && error.code !== "PGRST116") {
+      // PGRST116 - "No rows found"
+      console.error("Ошибка Supabase при получении профиля:", error)
+      return null
+    }
+
+    if (!data) {
+      return null
+    }
+
+    // Преобразуем данные к нужному формату
+    const profile: UserProfile = {
+      id: data.id,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      phone: data.phone,
+      idCard: data.id_card,
+      discordNickname: data.discord_nickname,
+      profilePictureUrl: data.profile_picture_url,
+    }
+
+    return profile
   } catch (error) {
-    console.error("Ошибка при получении профиля:", error)
+    console.error("Непредвиденная ошибка при получении профиля:", error)
     return null
   }
 }
@@ -52,21 +74,27 @@ export async function createProfileIfNotFound(userData: {
     }
 
     // Если не найден, вставляем новый профиль
-    await sql`
-      INSERT INTO profiles (id, first_name, last_name, phone, id_card, discord_nickname)
-      VALUES (
-        ${userData.id},
-        ${userData.firstName},
-        ${userData.lastName},
-        ${userData.phone},
-        ${userData.idCard},
-        ${userData.discordNickname}
-      )
-    `
+    const { data, error } = await supabaseServer
+      .from("profiles")
+      .insert({
+        id: userData.id,
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        phone: userData.phone,
+        id_card: userData.idCard,
+        discord_nickname: userData.discordNickname,
+      })
+      .select()
+
+    if (error) {
+      console.error("Ошибка Supabase при создании профиля:", error)
+      return { success: false, error: error.message }
+    }
+
     revalidatePath("/profile") // Перевалидируем страницу профиля после создания
     return { success: true }
   } catch (error) {
-    console.error("Ошибка при создании профиля, если не найден:", error)
+    console.error("Непредвиденная ошибка при создании профиля, если не найден:", error)
     return { success: false, error: "Не удалось создать профиль." }
   }
 }
@@ -79,21 +107,27 @@ export async function updateProfile(
   data: Omit<UserProfile, "id" | "profilePictureUrl">,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await sql`
-      UPDATE profiles
-      SET
-        first_name = ${data.firstName},
-        last_name = ${data.lastName},
-        phone = ${data.phone},
-        id_card = ${data.idCard},
-        discord_nickname = ${data.discordNickname},
-        updated_at = NOW()
-      WHERE id = ${userId}
-    `
+    const { error } = await supabaseServer
+      .from("profiles")
+      .update({
+        first_name: data.firstName,
+        last_name: data.lastName,
+        phone: data.phone,
+        id_card: data.idCard,
+        discord_nickname: data.discordNickname,
+        updated_at: new Date().toISOString(), // Обновляем updated_at вручную или через триггер БД
+      })
+      .eq("id", userId)
+
+    if (error) {
+      console.error("Ошибка Supabase при обновлении профиля:", error)
+      return { success: false, error: error.message }
+    }
+
     revalidatePath("/profile") // Перевалидируем страницу профиля
     return { success: true }
   } catch (error) {
-    console.error("Ошибка при обновлении профиля:", error)
+    console.error("Непредвиденная ошибка при обновлении профиля:", error)
     return { success: false, error: "Не удалось обновить профиль." }
   }
 }
@@ -122,15 +156,20 @@ export async function uploadProfilePicture(
     const { url } = await put(`avatars/${filename}`, file, { access: "public" })
 
     // Обновляем URL фотографии в базе данных
-    await sql`
-      UPDATE profiles
-      SET profile_picture_url = ${url}, updated_at = NOW()
-      WHERE id = ${userId}
-    `
+    const { error } = await supabaseServer
+      .from("profiles")
+      .update({ profile_picture_url: url, updated_at: new Date().toISOString() })
+      .eq("id", userId)
+
+    if (error) {
+      console.error("Ошибка Supabase при обновлении URL фото профиля:", error)
+      return { success: false, error: error.message }
+    }
+
     revalidatePath("/profile")
     return { success: true, url }
   } catch (error) {
-    console.error("Ошибка при загрузке фотографии профиля:", error)
+    console.error("Непредвиденная ошибка при загрузке фотографии профиля:", error)
     return { success: false, error: "Не удалось загрузить фотографию профиля." }
   }
 }

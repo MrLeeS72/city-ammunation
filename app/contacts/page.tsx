@@ -1,154 +1,84 @@
-"use client"
-
-import type React from "react"
-
-import { useState, useRef, useEffect } from "react"
-import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import Header from "../components/Header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPin, Phone, ZoomIn, ZoomOut, Move } from "lucide-react"
 
 export default function Contacts() {
-  /* ---------- simple pan / zoom logic for the static map ---------- */
-  const [scale, setScale] = useState(1)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-  const [isDragging, setIsDragging] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const zoomIn = () => setScale((s) => Math.min(s + 0.2, 3))
-  const zoomOut = () => setScale((s) => Math.max(s - 0.2, 0.5))
-
-  /* ---------- mouse / touch handlers ---------- */
-  const startDrag = (x: number, y: number) => {
-    setIsDragging(true)
-    setDragStart({ x: x - position.x, y: y - position.y })
-  }
-
-  const onMouseDown = (e: React.MouseEvent) => startDrag(e.clientX, e.clientY)
-  const onTouchStart = (e: React.TouchEvent) => startDrag(e.touches[0].clientX, e.touches[0].clientY)
-
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return
-    setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y })
-  }
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return
-    setPosition({
-      x: e.touches[0].clientX - dragStart.x,
-      y: e.touches[0].clientY - dragStart.y,
-    })
-  }
-
-  const stopDrag = () => setIsDragging(false)
-
-  /* reset panning when we return to default zoom */
-  useEffect(() => {
-    if (scale === 1) setPosition({ x: 0, y: 0 })
-  }, [scale])
-
-  /* ---------- render ---------- */
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
-
       <main className="flex-grow container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-6 text-red-600 text-center">Контакты</h1>
+        <h1 className="text-4xl font-bold mb-8 text-red-600 text-center">Свяжитесь с нами</h1>
 
-        {/* ------- LOCATION CARD ------- */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <MapPin className="mr-2 h-5 w-5 text-red-600" />
-              КАК НАС НАЙТИ?
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            <p className="font-bold">Ammu-Nation находится по адресу:</p>
-            <p>Cypress Flats, Popular Street, 9275</p>
-
-            {/* interactive map */}
-            <div
-              className="mt-4 relative w-full overflow-hidden rounded-lg border border-gray-200"
-              style={{ height: "400px" }}
-            >
-              <div
-                ref={containerRef}
-                className="relative w-full h-full cursor-move"
-                onMouseDown={onMouseDown}
-                onMouseMove={onMouseMove}
-                onMouseUp={stopDrag}
-                onMouseLeave={stopDrag}
-                onTouchStart={onTouchStart}
-                onTouchMove={onTouchMove}
-                onTouchEnd={stopDrag}
-              >
-                <div
-                  style={{
-                    transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
-                    transformOrigin: "center",
-                    width: "100%",
-                    height: "100%",
-                    transition: isDragging ? "none" : "transform 0.1s ease-out",
-                  }}
-                >
-                  <Image
-                    src="/images/los-santos-detailed-map.png"
-                    alt="Детальная карта Лос-Сантоса"
-                    fill
-                    className="object-contain rounded-lg select-none"
-                    draggable={false}
-                  />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Contact Information */}
+          <div className="bg-white p-8 rounded-lg shadow-lg">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Наши контакты</h2>
+            <div className="space-y-4 text-lg text-gray-700">
+              <p>
+                <strong>Адрес:</strong> Бульвар Вайнвуд, Лос-Сантос, Сан-Андреас
+              </p>
+              <p>
+                <strong>Телефон:</strong> +1 (555) 123-4567
+              </p>
+              <p>
+                <strong>Email:</strong> info@ammunation.ls
+              </p>
+              <p>
+                <strong>Часы работы:</strong> Ежедневно с 9:00 до 20:00
+              </p>
+            </div>
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold mb-4 text-gray-800">Мы на карте:</h3>
+              <div className="relative w-full h-64 rounded-md overflow-hidden">
+                <img
+                  src="/public/images/los-santos-detailed-map.png"
+                  alt="Карта Лос-Сантоса"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-red-600 text-4xl font-bold">📍</span>
                 </div>
               </div>
-
-              {/* zoom buttons */}
-              <div className="absolute bottom-4 right-4 flex flex-col gap-2">
-                <button
-                  aria-label="Приблизить"
-                  onClick={zoomIn}
-                  className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100"
-                >
-                  <ZoomIn className="h-5 w-5 text-gray-700" />
-                </button>
-                <button
-                  aria-label="Отдалить"
-                  onClick={zoomOut}
-                  className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100"
-                >
-                  <ZoomOut className="h-5 w-5 text-gray-700" />
-                </button>
-              </div>
-
-              {/* helper tooltip */}
-              <div className="absolute top-4 left-4 bg-white/80 px-2 py-1 rounded text-sm flex items-center">
-                <Move className="h-4 w-4 mr-1" /> Перетаскивайте для навигации
-              </div>
             </div>
+          </div>
 
-            <p className="text-sm text-gray-500 mt-2 italic">Детальная карта Лос-Сантоса с указанием районов и улиц</p>
-          </CardContent>
-        </Card>
-
-        {/* ------- CONTACTS CARD ------- */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Phone className="mr-2 h-5 w-5 text-red-600" />
-              Свяжитесь с нами
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            <ul className="space-y-2">
-              <li>Jerry — 735-2879</li>
-              <li>Jared — 262-7153</li>
-            </ul>
-          </CardContent>
-        </Card>
+          {/* Contact Form */}
+          <div className="bg-white p-8 rounded-lg shadow-lg">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Отправьте нам сообщение</h2>
+            <form className="space-y-6">
+              <div>
+                <Label htmlFor="name" className="text-lg">
+                  Ваше имя
+                </Label>
+                <Input id="name" type="text" placeholder="Иван Иванов" className="mt-2 p-3" />
+              </div>
+              <div>
+                <Label htmlFor="email" className="text-lg">
+                  Ваш Email
+                </Label>
+                <Input id="email" type="email" placeholder="ivan@example.com" className="mt-2 p-3" />
+              </div>
+              <div>
+                <Label htmlFor="subject" className="text-lg">
+                  Тема
+                </Label>
+                <Input id="subject" type="text" placeholder="Вопрос по лицензированию" className="mt-2 p-3" />
+              </div>
+              <div>
+                <Label htmlFor="message" className="text-lg">
+                  Сообщение
+                </Label>
+                <Textarea id="message" rows={5} placeholder="Ваше сообщение..." className="mt-2 p-3" />
+              </div>
+              <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white text-lg py-3">
+                Отправить сообщение
+              </Button>
+            </form>
+          </div>
+        </div>
       </main>
-
       <footer className="bg-gray-800 text-white py-4 text-center">
         <p>&copy; 2025 City Ammu-Nation. Все права защищены.</p>
       </footer>

@@ -1,6 +1,6 @@
 "use server"
 
-import sql from "@/lib/db"
+import { supabaseServer } from "@/lib/db" // Импортируем серверный клиент Supabase
 import { revalidatePath } from "next/cache"
 import type { CartItem } from "@/app/contexts/CartContext" // Импортируем тип CartItem
 
@@ -31,19 +31,25 @@ interface StoredOrder {
  */
 export async function addOrder(userId: string, order: OrderData): Promise<{ success: boolean; error?: string }> {
   try {
-    await sql`
-      INSERT INTO orders (user_id, order_date, total_price, items_json)
-      VALUES (
-        ${userId},
-        ${order.orderDate},
-        ${order.totalPrice},
-        ${JSON.stringify(order.items)}::jsonb
-      )
-    `
+    const { data, error } = await supabaseServer
+      .from("orders")
+      .insert({
+        user_id: userId,
+        order_date: order.orderDate,
+        total_price: order.totalPrice,
+        items_json: order.items, // Supabase автоматически преобразует JSONB
+      })
+      .select() // Возвращаем вставленные данные
+
+    if (error) {
+      console.error("Ошибка Supabase при добавлении заказа:", error)
+      return { success: false, error: error.message }
+    }
+
     revalidatePath("/profile") // Перевалидируем страницу профиля, чтобы обновить историю заказов
     return { success: true }
   } catch (error) {
-    console.error("Ошибка при добавлении заказа:", error)
+    console.error("Непредвиденная ошибка при добавлении заказа:", error)
     return { success: false, error: "Не удалось добавить заказ." }
   }
 }
@@ -53,15 +59,30 @@ export async function addOrder(userId: string, order: OrderData): Promise<{ succ
  */
 export async function getOrders(userId: string): Promise<StoredOrder[]> {
   try {
-    const orders = await sql<StoredOrder[]>`
-      SELECT id, user_id as "userId", order_date as "orderDate", total_price as "totalPrice", items_json as "itemsJson", created_at as "createdAt"
-      FROM orders
-      WHERE user_id = ${userId}
-      ORDER BY order_date DESC
-    `
+    const { data, error } = await supabaseServer
+      .from("orders")
+      .select("id, user_id, order_date, total_price, items_json, created_at")
+      .eq("user_id", userId)
+      .order("order_date", { ascending: false })
+
+    if (error) {
+      console.error("Ошибка Supabase при получении истории заказов:", error)
+      return []
+    }
+
+    // Преобразуем данные к нужному формату
+    const orders: StoredOrder[] = data.map((order: any) => ({
+      id: order.id,
+      userId: order.user_id,
+      orderDate: order.order_date,
+      totalPrice: order.total_price,
+      itemsJson: order.items_json,
+      createdAt: order.created_at,
+    }))
+
     return orders
   } catch (error) {
-    console.error("Ошибка при получении истории заказов:", error)
+    console.error("Непредвиденная ошибка при получении истории заказов:", error)
     return []
   }
 }

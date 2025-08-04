@@ -10,175 +10,154 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { User, Phone, CreditCard, MessageCircle } from "lucide-react"
 
 export default function Auth() {
-  const { login, isAuthenticated } = useAuth()
-  const router = useRouter()
-  const [formData, setFormData] = useState({
-    lastName: "",
-    firstName: "",
-    phone: "",
-    idCard: "",
-    discordNickname: "",
-  })
+  const [isLogin, setIsLogin] = useState(true)
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [idCard, setIdCard] = useState("")
+  const [discordNickname, setDiscordNickname] = useState("")
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const router = useRouter()
+  const { login } = useAuth()
 
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    router.push("/")
-    return null
-  }
-
-  const validateIdCard = (idCard: string): boolean => {
+  const validateIdCard = (value: string) => {
     const regex = /^\d{2}[A-Z]{2}$/
-    return regex.test(idCard)
+    return regex.test(value)
   }
 
-  const validatePhone = (phone: string): boolean => {
+  const validatePhone = (value: string) => {
     const regex = /^\d{3}-\d{4}$/
-    return regex.test(phone)
+    return regex.test(value)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
 
-    // Validate required fields
-    if (!formData.lastName.trim()) newErrors.lastName = "Фамилия обязательна"
-    if (!formData.firstName.trim()) newErrors.firstName = "Имя обязательно"
-    if (!formData.phone.trim()) {
+    if (!lastName.trim()) newErrors.lastName = "Фамилия обязательна"
+    if (!firstName.trim()) newErrors.firstName = "Имя обязательно"
+    if (!phone.trim()) {
       newErrors.phone = "Номер телефона обязателен"
-    } else if (!validatePhone(formData.phone)) {
+    } else if (!validatePhone(phone)) {
       newErrors.phone = "Формат: XXX-XXXX"
     }
-    if (!formData.idCard.trim()) {
+    if (!idCard.trim()) {
       newErrors.idCard = "ID карта обязательна"
-    } else if (!validateIdCard(formData.idCard)) {
+    } else if (!validateIdCard(idCard)) {
       newErrors.idCard = "Формат: XXYY (где X - цифра, Y - заглавная латинская буква)"
     }
-    if (!formData.discordNickname.trim()) newErrors.discordNickname = "Discord никнейм обязателен"
+    if (!discordNickname.trim()) newErrors.discordNickname = "Discord никнейм обязателен"
 
     setErrors(newErrors)
 
     if (Object.keys(newErrors).length === 0) {
-      login(formData)
-      router.push("/")
-    }
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }))
+      // Simulate successful login/registration
+      login({ firstName, lastName, phone, idCard, discordNickname })
+      alert(isLogin ? "Вход выполнен успешно!" : "Регистрация успешна! Вы вошли в систему.")
+      router.push("/profile") // Redirect to profile page after auth
     }
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
-      <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
+      <main className="flex-grow flex items-center justify-center px-4 py-8">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-2xl text-center text-red-600">Регистрация в City Ammu-Nation</CardTitle>
-            <p className="text-center text-gray-600">Заполните данные для доступа к каталогу и оформления заказов</p>
+            <CardTitle className="text-3xl font-bold text-center text-red-600">
+              {isLogin ? "Вход" : "Регистрация"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <Label htmlFor="lastName" className="flex items-center">
-                  <User className="h-4 w-4 mr-2" />
-                  Фамилия
-                </Label>
+                <Label htmlFor="lastName">Фамилия</Label>
                 <Input
                   id="lastName"
-                  name="lastName"
                   type="text"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className={errors.lastName ? "border-red-500" : ""}
+                  value={lastName}
+                  onChange={(e) => {
+                    setLastName(e.target.value)
+                    if (errors.lastName) setErrors((prev) => ({ ...prev, lastName: "" }))
+                  }}
                   placeholder="Введите фамилию"
+                  className={errors.lastName ? "border-red-500" : ""}
                 />
                 {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
               </div>
-
               <div>
-                <Label htmlFor="firstName" className="flex items-center">
-                  <User className="h-4 w-4 mr-2" />
-                  Имя
-                </Label>
+                <Label htmlFor="firstName">Имя</Label>
                 <Input
                   id="firstName"
-                  name="firstName"
                   type="text"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className={errors.firstName ? "border-red-500" : ""}
+                  value={firstName}
+                  onChange={(e) => {
+                    setFirstName(e.target.value)
+                    if (errors.firstName) setErrors((prev) => ({ ...prev, firstName: "" }))
+                  }}
                   placeholder="Введите имя"
+                  className={errors.firstName ? "border-red-500" : ""}
                 />
                 {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
               </div>
-
               <div>
-                <Label htmlFor="phone" className="flex items-center">
-                  <Phone className="h-4 w-4 mr-2" />
-                  Номер телефона
-                </Label>
+                <Label htmlFor="phone">Номер телефона</Label>
                 <Input
                   id="phone"
-                  name="phone"
                   type="text"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className={errors.phone ? "border-red-500" : ""}
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value)
+                    if (errors.phone) setErrors((prev) => ({ ...prev, phone: "" }))
+                  }}
                   placeholder="XXX-XXXX"
                   maxLength={8}
+                  className={errors.phone ? "border-red-500" : ""}
                 />
                 {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
               </div>
-
               <div>
-                <Label htmlFor="idCard" className="flex items-center">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  ID карта
-                </Label>
+                <Label htmlFor="idCard">ID карта</Label>
                 <Input
                   id="idCard"
-                  name="idCard"
                   type="text"
-                  value={formData.idCard}
-                  onChange={handleChange}
-                  className={errors.idCard ? "border-red-500" : ""}
+                  value={idCard}
+                  onChange={(e) => {
+                    setIdCard(e.target.value.toUpperCase()) // Автоматически переводим в верхний регистр
+                    if (errors.idCard) setErrors((prev) => ({ ...prev, idCard: "" }))
+                  }}
                   placeholder="XXYY (например: 12AB)"
                   maxLength={4}
-                  style={{ textTransform: "uppercase" }}
+                  className={errors.idCard ? "border-red-500" : ""}
                 />
                 {errors.idCard && <p className="text-red-500 text-sm mt-1">{errors.idCard}</p>}
               </div>
-
               <div>
-                <Label htmlFor="discordNickname" className="flex items-center">
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Discord никнейм
-                </Label>
+                <Label htmlFor="discordNickname">Discord никнейм</Label>
                 <Input
                   id="discordNickname"
-                  name="discordNickname"
                   type="text"
-                  value={formData.discordNickname}
-                  onChange={handleChange}
-                  className={errors.discordNickname ? "border-red-500" : ""}
+                  value={discordNickname}
+                  onChange={(e) => {
+                    setDiscordNickname(e.target.value)
+                    if (errors.discordNickname) setErrors((prev) => ({ ...prev, discordNickname: "" }))
+                  }}
                   placeholder="Ваш Discord никнейм"
+                  className={errors.discordNickname ? "border-red-500" : ""}
                 />
                 {errors.discordNickname && <p className="text-red-500 text-sm mt-1">{errors.discordNickname}</p>}
               </div>
-
-              <Button type="submit" className="w-full bg-red-600 hover:bg-red-700">
-                Зарегистрироваться
+              <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white text-lg py-3">
+                {isLogin ? "Войти" : "Зарегистрироваться"}
               </Button>
             </form>
+            <div className="mt-6 text-center">
+              <Button variant="link" onClick={() => setIsLogin(!isLogin)} className="text-red-600 hover:text-red-700">
+                {isLogin ? "У меня нет аккаунта" : "Уже есть аккаунт?"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </main>

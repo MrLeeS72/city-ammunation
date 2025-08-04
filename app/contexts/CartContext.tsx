@@ -5,24 +5,22 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 export interface CartItem {
   id: string
   name: string
-  price: number
-  image: string
-  quantity: number
   category: string
-  ammo?: string
+  price: number
+  quantity: number
+  image: string
   ammoQuantity?: number // Количество пачек патронов
   ammoPrice?: number // Цена за пачку патронов
 }
 
 interface CartContextType {
   items: CartItem[]
-  addToCart: (item: Omit<CartItem, "quantity">) => void
-  removeFromCart: (id: string) => void
-  updateQuantity: (id: string, quantity: number) => void
-  updateAmmoQuantity: (id: string, ammoQuantity: number) => void // Новая функция
-  clearCart: () => void
+  addItem: (item: Omit<CartItem, "quantity">, quantity?: number, ammoQuantity?: number) => void
+  removeItem: (id: string) => void
+  updateItemQuantity: (id: string, quantity: number) => void
+  updateItemAmmoQuantity: (id: string, ammoQuantity: number) => void
   getTotalPrice: () => number
-  getTotalItems: () => number
+  clearCart: () => void
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -41,36 +39,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("ammu-nation-cart", JSON.stringify(items))
   }, [items])
 
-  const addToCart = (item: Omit<CartItem, "quantity">) => {
+  const addItem = (item: Omit<CartItem, "quantity">, quantity = 1, ammoQuantity = 0) => {
     setItems((prevItems) => {
       const existingItem = prevItems.find((i) => i.id === item.id)
       if (existingItem) {
-        return prevItems.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i))
+        return prevItems.map((i) =>
+          i.id === item.id
+            ? {
+                ...i,
+                quantity: i.quantity + quantity,
+                ammoQuantity: i.ammoQuantity !== undefined ? i.ammoQuantity + ammoQuantity : ammoQuantity,
+              }
+            : i,
+        )
+      } else {
+        return [...prevItems, { ...item, quantity, ammoQuantity }]
       }
-      return [...prevItems, { ...item, quantity: 1 }]
     })
   }
 
-  const removeFromCart = (id: string) => {
+  const removeItem = (id: string) => {
     setItems((prevItems) => prevItems.filter((item) => item.id !== id))
   }
 
-  const updateQuantity = (id: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(id)
-      return
-    }
-    setItems((prevItems) => prevItems.map((item) => (item.id === id ? { ...item, quantity } : item)))
-  }
-
-  const updateAmmoQuantity = (id: string, ammoQuantity: number) => {
+  const updateItemQuantity = (id: string, quantity: number) => {
     setItems((prevItems) =>
-      prevItems.map((item) => (item.id === id ? { ...item, ammoQuantity: Math.max(0, ammoQuantity) } : item)),
+      prevItems.map((item) => (item.id === id ? { ...item, quantity } : item)).filter((item) => item.quantity > 0),
     )
   }
 
-  const clearCart = () => {
-    setItems([])
+  const updateItemAmmoQuantity = (id: string, ammoQuantity: number) => {
+    setItems((prevItems) => prevItems.map((item) => (item.id === id ? { ...item, ammoQuantity } : item)))
   }
 
   const getTotalPrice = () => {
@@ -81,21 +80,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }, 0)
   }
 
-  const getTotalItems = () => {
-    return items.reduce((total, item) => total + item.quantity, 0)
+  const clearCart = () => {
+    setItems([])
   }
 
   return (
     <CartContext.Provider
       value={{
         items,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        updateAmmoQuantity, // Добавлено новое поле
-        clearCart,
+        addItem,
+        removeItem,
+        updateItemQuantity,
+        updateItemAmmoQuantity,
         getTotalPrice,
-        getTotalItems,
+        clearCart,
       }}
     >
       {children}

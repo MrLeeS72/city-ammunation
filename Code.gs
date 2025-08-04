@@ -20,46 +20,50 @@ function doPost(e) {
         // Проверяем, есть ли заголовок, и добавляем его, если нет
         if (sheet.getLastRow() === 0) {
           sheet.appendRow([
-            "Дата Заказа (Клиент)",
-            "Дата Получения (Сервер)",
-            "Имя",
-            "Фамилия",
-            "Телефон",
-            "ID Карта",
-            "Discord Никнейм",
-            "Детали Заказа",
-            "Общая Сумма",
+            "Order ID",
+            "Date",
+            "Customer Name",
+            "Phone",
+            "ID Card",
+            "Discord Nickname",
+            "Item Name",
+            "Category",
+            "Quantity",
+            "Price",
+            "Ammo Quantity",
+            "Ammo Price",
+            "Total Item Price",
+            "Total Order Price"
           ]);
         }
 
-        const orderReceivedAt = Utilities.formatDate(new Date(), "GMT+3", "dd.MM.yyyy HH:mm:ss");
-        const customer = data.customerInfo || {};
-        const items = data.items || [];
+        const orderId = "ORD-" + Utilities.getUuid().slice(0, 8); // Generate a simple order ID
+        const orderDate = new Date().toLocaleString();
+        const customerInfo = data.customerInfo;
+        const items = data.items;
+        const totalPrice = data.totalPrice;
 
-        if (!customer.firstName || items.length === 0) {
-          responseData = { success: false, error: "Некорректные данные заказа: отсутствует имя клиента или товары." };
-        } else {
-          const itemsString = items.map(item => {
-            let line = `${item.name} x${item.quantity} (${item.price}₽)`;
-            if (item.ammoQuantity && item.ammoPrice) {
-              line += ` + патроны x${item.ammoQuantity} (${item.ammoPrice}₽)`;
-            }
-            return line;
-          }).join("; ");
+        items.forEach(function(item) {
+          var row = [
+            orderId,
+            orderDate,
+            customerInfo.firstName + " " + customerInfo.lastName,
+            customerInfo.phone,
+            customerInfo.idCard,
+            customerInfo.discordNickname,
+            item.name,
+            item.category,
+            item.quantity,
+            item.price,
+            item.ammoQuantity || 0,
+            item.ammoPrice || 0,
+            (item.price * item.quantity + (item.ammoQuantity || 0) * (item.ammoPrice || 0)),
+            totalPrice // Total order price is repeated for each item row for easier filtering
+          ];
+          sheet.appendRow(row);
+        });
 
-          sheet.appendRow([
-            data.orderDate,
-            orderReceivedAt,
-            customer.firstName,
-            customer.lastName,
-            customer.phone,
-            customer.idCard,
-            customer.discordNickname,
-            itemsString,
-            data.totalPrice,
-          ]);
-          responseData = { success: true };
-        }
+        responseData = { success: true, message: "Order received" };
       }
     }
   } catch (error) {
