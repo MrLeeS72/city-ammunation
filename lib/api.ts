@@ -1,4 +1,6 @@
-import { TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } from "@/lib/constants"
+// lib/api.ts
+// Переэкспортируем Server Actions из соответствующих файлов
+import { TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } from "./constants" // Изменено на относительный путь
 import { getProfileByUserId, updateProfile } from "@/app/actions/profile"
 import { getOrdersByUserId, createOrder } from "@/app/actions/orders"
 import { sendOrderConfirmationToTelegram } from "@/app/actions/telegram"
