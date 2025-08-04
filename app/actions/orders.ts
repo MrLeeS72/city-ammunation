@@ -1,87 +1,94 @@
 "use server"
 
-import { createServerSupabaseClient } from "@/lib/db"
+import { supabaseServer } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 
-export async function createOrder(
-  userId: string,
-  items: { productId: string; quantity: number; price: number }[],
-  totalAmount: number,
-) {
-  const supabase = createServerSupabaseClient()
+interface OrderItem {
+  product_id: string
+  quantity: number
+  price_at_purchase: number
+  ammo_quantity?: number
+  ammo_price_at_purchase?: number
+}
 
-  try {
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .insert({ user_id: userId, total_amount: totalAmount, status: "pending" })
-      .select()
-      .single()
-
-    if (orderError) {
-      console.error("Error creating order:", orderError)
-      throw new Error(`Failed to create order: ${orderError.message}`)
-    }
-
-    const orderItems = items.map((item) => ({
-      order_id: order.id,
-      product_id: item.productId,
-      quantity: item.quantity,
-      price_at_purchase: item.price,
-    }))
-
-    const { error: orderItemsError } = await supabase.from("order_items").insert(orderItems)
-
-    if (orderItemsError) {
-      console.error("Error creating order items:", orderItemsError)
-      throw new Error(`Failed to create order items: ${orderItemsError.message}`)
-    }
-
-    revalidatePath("/profile") // Revalidate profile page to show new order
-    return { success: true, orderId: order.id }
-  } catch (error: any) {
-    console.error("Server Action Error (createOrder):", error)
-    return { success: false, error: error.message }
-  }
+interface OrderData {
+  user_id: string
+  total_price: number
+  customer_first_name: string
+  customer_last_name: string
+  customer_phone: string
+  customer_id_card: string
+  customer_discord_nickname: string
+  items: OrderItem[]
 }
 
 export async function getOrdersByUserId(userId: string) {
-  const supabase = createServerSupabaseClient()
+  const { data, error } = await supabaseServer
+    .from("orders")
+    .select(`
+      *,
+      order_items (
+        *
+      )
+    `)
+    .eq("user_id", userId)
+    .order("order_date", { ascending: false })
 
-  try {
-    const { data, error } = await supabase
-      .from("orders")
-      .select(`
-        id,
-        total_amount,
-        status,
-        created_at,
-        order_items (
-          product_id,
-          quantity,
-          price_at_purchase
-        )
-      `)
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-
-    if (error) {
-      console.error("Error fetching orders:", error)
-      throw new Error(`Failed to fetch orders: ${error.message}`)
-    }
-
-    // For simplicity, we're assuming product_id can be mapped to a name.
-    // In a real app, you'd likely join with a products table or fetch product details.
-    const ordersWithProductNames = data?.map((order) => ({
-      ...order,
-      order_items: order.order_items.map((item) => ({
-        ...item,
-        product_name: `Product ${item.product_id.substring(0, 4)}...`, // Placeholder name
-      })),
-    }))
-
-    return { success: true, orders: ordersWithProductNames || [] }
-  } catch (error: any) {
-    console.error("Server Action Error (getOrdersByUserId):", error)
-    return { success: false, error: error.message, orders: [] }
+  if (error) {
+    console.error("Error fetching orders:", error)
+    return { success: false, error: error.message, data: null }
   }
+  return { success: true, data, error: null }
+}
+
+export async function addOrder(orderData: OrderData) {
+  const {
+    user_id,
+    total_price,
+    customer_first_name,
+    customer_last_name,
+    customer_phone,
+    customer_id_card,
+    customer_discord_nickname,
+    items,
+  } = orderData
+
+  const { data: order, error: orderError } = await supabaseServer
+    .from("orders")
+    .insert({
+      user_id,
+      total_price,
+      customer_first_name,
+      customer_last_name,
+      customer_phone,
+      customer_id_card,
+      customer_discord_nickname,
+    })
+    .select()
+    .single()
+
+  if (orderError) {
+    console.error("Error creating order:", orderError)
+    return { success: false, error: orderError.message }
+  }
+
+  const orderItemsToInsert = items.map((item) => ({
+    order_id: order.id,
+    product_id: item.product_id,
+    quantity: item.quantity,
+    price_at_purchase: item.price_at_purchase,
+    ammo_quantity: item.ammo_quantity,
+    ammo_price_at_purchase: item.ammo_price_at_purchase,
+  }))
+
+  const { error: orderItemsError } = await supabaseServer.from("order_items").insert(orderItemsToInsert)
+
+  if (orderItemsError) {
+    console.error("Error creating order items:", orderItemsError)
+    return { success: false, error: orderItemsError.message }
+  }
+
+  revalidatePath("/profile")
+  revalidatePath("/order")
+  return { success: true, orderId: order.id }
 }
