@@ -33,6 +33,45 @@ export async function getProfile(userId: string): Promise<UserProfile | null> {
 }
 
 /**
+ * Создает новый профиль пользователя, если он еще не существует.
+ * Эта функция идемпотентна: если профиль уже есть, она ничего не делает.
+ */
+export async function createProfileIfNotFound(userData: {
+  id: string
+  firstName: string
+  lastName: string
+  phone: string
+  idCard: string
+  discordNickname: string
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Проверяем, существует ли профиль
+    const existingProfile = await getProfile(userData.id)
+    if (existingProfile) {
+      return { success: true } // Профиль уже существует, нет необходимости создавать
+    }
+
+    // Если не найден, вставляем новый профиль
+    await sql`
+      INSERT INTO profiles (id, first_name, last_name, phone, id_card, discord_nickname)
+      VALUES (
+        ${userData.id},
+        ${userData.firstName},
+        ${userData.lastName},
+        ${userData.phone},
+        ${userData.idCard},
+        ${userData.discordNickname}
+      )
+    `
+    revalidatePath("/profile") // Перевалидируем страницу профиля после создания
+    return { success: true }
+  } catch (error) {
+    console.error("Ошибка при создании профиля, если не найден:", error)
+    return { success: false, error: "Не удалось создать профиль." }
+  }
+}
+
+/**
  * Обновляет данные профиля пользователя в базе данных.
  */
 export async function updateProfile(

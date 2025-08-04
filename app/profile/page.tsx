@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { getProfile, getOrders, updateProfile, uploadProfilePicture } from "@/lib/api" // Добавлены импорты
 
 import type React from "react"
 import { useState, useEffect, useCallback } from "react"
@@ -16,7 +15,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { User, Phone, CreditCard, MessageCircle, Camera, History, Package, Loader2 } from "lucide-react"
 import Image from "next/image"
-import sql from "@/lib/db" // Корректный импорт клиента Neon
+
+// Импортируем Server Actions из lib/api
+import { getProfile, updateProfile, uploadProfilePicture, createProfileIfNotFound } from "@/lib/api"
+import { getOrders } from "@/lib/api"
 
 interface UserProfileData {
   id: string
@@ -25,7 +27,7 @@ interface UserProfileData {
   phone: string
   idCard: string
   discordNickname: string
-  profilePictureUrl?: string | null // Изменено на profilePictureUrl
+  profilePictureUrl?: string | null
 }
 
 interface StoredOrder {
@@ -55,7 +57,7 @@ export default function Profile() {
     phone: "",
     idCard: "",
     discordNickname: "",
-    profilePictureUrl: null, // Изменено на profilePictureUrl
+    profilePictureUrl: null,
   })
   const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -66,7 +68,6 @@ export default function Profile() {
   // Загрузка данных профиля и истории заказов
   const fetchData = useCallback(async () => {
     if (!user?.id) {
-      // Используем user.id (UUID)
       setIsLoading(false)
       return
     }
@@ -81,31 +82,36 @@ export default function Profile() {
           phone: profileData.phone || "",
           idCard: profileData.idCard || "",
           discordNickname: profileData.discordNickname || "",
-          profilePictureUrl: profileData.profilePictureUrl || null, // Изменено на profilePictureUrl
+          profilePictureUrl: profileData.profilePictureUrl || null,
         })
-        setProfilePicturePreview(profileData.profilePictureUrl || null) // Изменено на profilePictureUrl
+        setProfilePicturePreview(profileData.profilePictureUrl || null)
         // Обновляем AuthContext user с profilePictureUrl из БД
         login({ ...user, profilePictureUrl: profileData.profilePictureUrl || undefined })
       } else {
-        // Если профиль не найден в БД, создаем его на основе данных из AuthContext
-        await sql`
-          INSERT INTO profiles (id, first_name, last_name, phone, id_card, discord_nickname)
-          VALUES (
-            ${user.id}, // Используем user.id (UUID)
-            ${user.firstName},
-            ${user.lastName},
-            ${user.phone},
-            ${user.idCard},
-            ${user.discordNickname}
-          )
-        `
+        // Если профиль не найден в БД, создаем его через Server Action
+        const createResult = await createProfileIfNotFound({
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: user.phone,
+          idCard: user.idCard,
+          discordNickname: user.discordNickname,
+        })
+
+        if (!createResult.success) {
+          console.error("Failed to create profile on first load:", createResult.error)
+          // Можно установить ошибку для отображения пользователю
+        }
+
+        // Устанавливаем formData и preview на основе данных из AuthContext,
+        // так как это начальное состояние для нового профиля
         setFormData({
           lastName: user.lastName || "",
           firstName: user.firstName || "",
           phone: user.phone || "",
           idCard: user.idCard || "",
           discordNickname: user.discordNickname || "",
-          profilePictureUrl: null, // Изменено на profilePictureUrl
+          profilePictureUrl: null,
         })
         setProfilePicturePreview(null)
       }
@@ -220,7 +226,7 @@ export default function Profile() {
         const result = await uploadProfilePicture(user.id, file, formData.profilePictureUrl) // Используем user.id
         if (result.success && result.url) {
           setProfilePicturePreview(result.url)
-          setFormData((prev) => ({ ...prev, profilePictureUrl: result.url })) // Изменено на profilePictureUrl
+          setFormData((prev) => ({ ...prev, profilePictureUrl: result.url }))
           login({ ...user, profilePictureUrl: result.url }) // Обновляем AuthContext
           alert("Фото профиля успешно загружено!")
         } else {
