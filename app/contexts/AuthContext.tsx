@@ -1,19 +1,23 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { v4 as uuidv4 } from "uuid" // Импортируем uuid для генерации уникальных ID
 
 interface User {
+  id: string // Добавляем уникальный ID для пользователя (UUID)
   lastName: string
   firstName: string
   phone: string
   idCard: string
   discordNickname: string
-  profilePicture?: string // Добавляем поле для фотографии профиля
+  profilePictureUrl?: string // Изменяем имя поля для консистентности с БД
 }
 
 interface AuthContextType {
   user: User | null
-  login: (userData: User) => void
+  // Разрешаем id и profilePictureUrl быть опциональными при вводе,
+  // так как они могут быть сгенерированы/обновлены внутри контекста
+  login: (userData: Omit<User, "id" | "profilePictureUrl"> & { id?: string; profilePictureUrl?: string }) => void
   logout: () => void
   isAuthenticated: boolean
 }
@@ -30,15 +34,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = (userData: User) => {
-    setUser(userData)
-    localStorage.setItem("ammu-nation-user", JSON.stringify(userData))
+  const login = (userData: Omit<User, "id" | "profilePictureUrl"> & { id?: string; profilePictureUrl?: string }) => {
+    let userId = userData.id
+    // Пытаемся найти существующий UUID для данного idCard
+    const existingUsersByIdCard = JSON.parse(localStorage.getItem("ammu-nation-users-by-idcard") || "{}")
+    if (!userId && existingUsersByIdCard[userData.idCard]) {
+      userId = existingUsersByIdCard[userData.idCard]
+    } else if (!userId) {
+      userId = uuidv4() // Генерируем новый UUID, если не найден
+    }
+
+    const newUser: User = {
+      id: userId, // Используем сгенерированный или найденный UUID
+      ...userData,
+      // Сохраняем profilePictureUrl, если он передан, иначе используем текущий из user
+      profilePictureUrl:
+        userData.profilePictureUrl !== undefined ? userData.profilePictureUrl : user?.profilePictureUrl,
+    }
+
+    setUser(newUser)
+    localStorage.setItem("ammu-nation-user", JSON.stringify(newUser))
+    // Сохраняем соответствие idCard к UUID для последующих сессий
+    localStorage.setItem(
+      "ammu-nation-users-by-idcard",
+      JSON.stringify({
+        ...existingUsersByIdCard,
+        [userData.idCard]: userId,
+      }),
+    )
   }
 
   const logout = () => {
     setUser(null)
     localStorage.removeItem("ammu-nation-user")
     localStorage.removeItem("ammu-nation-cart")
+    // НЕ удаляем ammu-nation-users-by-idcard, так как он хранит постоянные ID пользователей
   }
 
   return (

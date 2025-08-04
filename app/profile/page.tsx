@@ -1,6 +1,8 @@
 "use client"
 
 import Link from "next/link"
+import { getProfile, getOrders, updateProfile, uploadProfilePicture } from "@/lib/api" // Добавлены импорты
+
 import type React from "react"
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
@@ -14,11 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { User, Phone, CreditCard, MessageCircle, Camera, History, Package, Loader2 } from "lucide-react"
 import Image from "next/image"
-import { sql } from "drizzle-orm"
-
-// Импортируем Server Actions
-import { getProfile, updateProfile, uploadProfilePicture } from "../actions/profile"
-import { getOrders } from "../actions/orders"
+import sql from "@/lib/db" // Корректный импорт клиента Neon
 
 interface UserProfileData {
   id: string
@@ -27,7 +25,7 @@ interface UserProfileData {
   phone: string
   idCard: string
   discordNickname: string
-  profilePictureUrl?: string | null
+  profilePictureUrl?: string | null // Изменено на profilePictureUrl
 }
 
 interface StoredOrder {
@@ -57,7 +55,7 @@ export default function Profile() {
     phone: "",
     idCard: "",
     discordNickname: "",
-    profilePictureUrl: null,
+    profilePictureUrl: null, // Изменено на profilePictureUrl
   })
   const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -67,14 +65,15 @@ export default function Profile() {
 
   // Загрузка данных профиля и истории заказов
   const fetchData = useCallback(async () => {
-    if (!user?.idCard) {
+    if (!user?.id) {
+      // Используем user.id (UUID)
       setIsLoading(false)
       return
     }
 
     setIsLoading(true)
     try {
-      const profileData = await getProfile(user.idCard) // Используем idCard как userId
+      const profileData = await getProfile(user.id) // Используем user.id (UUID)
       if (profileData) {
         setFormData({
           lastName: profileData.lastName || "",
@@ -82,15 +81,17 @@ export default function Profile() {
           phone: profileData.phone || "",
           idCard: profileData.idCard || "",
           discordNickname: profileData.discordNickname || "",
-          profilePictureUrl: profileData.profilePictureUrl || null,
+          profilePictureUrl: profileData.profilePictureUrl || null, // Изменено на profilePictureUrl
         })
-        setProfilePicturePreview(profileData.profilePictureUrl || null)
+        setProfilePicturePreview(profileData.profilePictureUrl || null) // Изменено на profilePictureUrl
+        // Обновляем AuthContext user с profilePictureUrl из БД
+        login({ ...user, profilePictureUrl: profileData.profilePictureUrl || undefined })
       } else {
-        // Если профиль не найден, создаем его на основе данных из AuthContext
+        // Если профиль не найден в БД, создаем его на основе данных из AuthContext
         await sql`
           INSERT INTO profiles (id, first_name, last_name, phone, id_card, discord_nickname)
           VALUES (
-            ${user.idCard},
+            ${user.id}, // Используем user.id (UUID)
             ${user.firstName},
             ${user.lastName},
             ${user.phone},
@@ -104,12 +105,12 @@ export default function Profile() {
           phone: user.phone || "",
           idCard: user.idCard || "",
           discordNickname: user.discordNickname || "",
-          profilePictureUrl: null,
+          profilePictureUrl: null, // Изменено на profilePictureUrl
         })
         setProfilePicturePreview(null)
       }
 
-      const userOrders = await getOrders(user.idCard) // Используем idCard как userId
+      const userOrders = await getOrders(user.id) // Используем user.id (UUID)
       setOrders(userOrders)
     } catch (err) {
       console.error("Ошибка при загрузке данных профиля/заказов:", err)
@@ -117,7 +118,7 @@ export default function Profile() {
     } finally {
       setIsLoading(false)
     }
-  }, [user])
+  }, [user, login]) // Добавляем login в зависимости
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -154,7 +155,7 @@ export default function Profile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user?.idCard) return
+    if (!user?.id) return // Используем user.id
 
     const newErrors: Record<string, string> = {}
 
@@ -177,7 +178,8 @@ export default function Profile() {
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true)
       try {
-        const result = await updateProfile(user.idCard, {
+        const result = await updateProfile(user.id, {
+          // Используем user.id
           firstName: formData.firstName,
           lastName: formData.lastName,
           phone: formData.phone,
@@ -186,7 +188,7 @@ export default function Profile() {
         })
         if (result.success) {
           // Обновляем данные в AuthContext, чтобы они были актуальными
-          login({ ...user, ...formData })
+          login({ ...user, ...formData }) // formData теперь содержит profilePictureUrl
           setIsEditing(false)
           alert("Профиль успешно обновлен!")
         } else {
@@ -211,14 +213,15 @@ export default function Profile() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file && user?.idCard) {
+    if (file && user?.id) {
+      // Используем user.id
       setIsLoading(true)
       try {
-        const result = await uploadProfilePicture(user.idCard, file, formData.profilePictureUrl)
+        const result = await uploadProfilePicture(user.id, file, formData.profilePictureUrl) // Используем user.id
         if (result.success && result.url) {
           setProfilePicturePreview(result.url)
-          setFormData((prev) => ({ ...prev, profilePictureUrl: result.url }))
-          login({ ...user, profilePicture: result.url }) // Обновляем AuthContext
+          setFormData((prev) => ({ ...prev, profilePictureUrl: result.url })) // Изменено на profilePictureUrl
+          login({ ...user, profilePictureUrl: result.url }) // Обновляем AuthContext
           alert("Фото профиля успешно загружено!")
         } else {
           alert(`Ошибка при загрузке фото: ${result.error}`)

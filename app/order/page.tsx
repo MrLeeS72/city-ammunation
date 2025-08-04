@@ -9,8 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ShoppingBag, Loader2, AlertCircle } from "lucide-react"
-// import { sendOrderToTelegram } from "../utils/telegram" // Удаляем прямой импорт
-import { sendTelegramOrderAction } from "../actions/telegram" // Импортируем новый Server Action
+import { sendTelegramOrderAction } from "../actions/telegram"
 import { addOrder as addOrderToServer } from "../actions/orders"
 
 export default function Order() {
@@ -67,7 +66,7 @@ export default function Order() {
   }
 
   const handleOrderSubmit = async () => {
-    if (!user) return
+    if (!user?.id) return // Убедимся, что user.id существует
 
     setIsSubmitting(true)
     setError(null)
@@ -82,7 +81,7 @@ export default function Order() {
       }
 
       // Если отправка в Telegram успешна, сохраняем заказ в базе данных
-      const dbResult = await addOrderToServer(user.idCard, orderData)
+      const dbResult = await addOrderToServer(user.id, orderData) // Передаем user.id (UUID)
 
       if (dbResult.success) {
         alert("Заказ успешно оформлен! Мы свяжемся с вами в ближайшее время.")
