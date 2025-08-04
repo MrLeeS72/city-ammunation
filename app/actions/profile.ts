@@ -100,7 +100,7 @@ export async function createProfileIfNotFound(userData: {
 }
 
 /**
- * Обновляет данные профиля пользователя в базе данных.
+ * Обновляет данные профиля пользователя в ��азе данных.
  */
 export async function updateProfile(
   userId: string,

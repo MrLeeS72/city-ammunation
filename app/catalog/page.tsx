@@ -270,7 +270,7 @@ const products: Product[] = [
     category: "Дробовики",
     price: 1200,
     image: "/public/images/sawed-off-shotgun.png",
-    description: "Компактный дробовик с разрушительной мощью на близкой дистанции.",
+    description: "Компактный дробовик с разрушительной мощью ��а близкой дистанции.",
     ammoPrice: 60,
   },
   {
