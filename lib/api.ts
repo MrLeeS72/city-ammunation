@@ -1,16 +1,19 @@
-// lib/api.ts
-// Переэкспортируем Server Actions из соответствующих файлов
-import { TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID } from "./constants" // Изменено на относительный путь
-import { getProfileByUserId, updateProfile } from "@/app/actions/profile"
-import { getOrdersByUserId, createOrder } from "@/app/actions/orders"
-import { sendOrderConfirmationToTelegram } from "@/app/actions/telegram"
+"use server"
 
-export {
-  TELEGRAM_BOT_TOKEN,
-  TELEGRAM_CHAT_ID,
-  getProfileByUserId,
-  updateProfile,
-  getOrdersByUserId,
-  createOrder,
-  sendOrderConfirmationToTelegram,
+import { getProfileByUserId, updateProfile } from "@/app/actions/profile"
+import { createOrder, getOrdersByUserId } from "@/app/actions/orders"
+import { sendTelegramMessage } from "@/app/actions/telegram"
+
+export const api = {
+  profile: {
+    get: getProfileByUserId,
+    update: updateProfile,
+  },
+  orders: {
+    create: createOrder,
+    get: getOrdersByUserId,
+  },
+  telegram: {
+    send: sendTelegramMessage,
+  },
 }
