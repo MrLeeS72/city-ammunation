@@ -4,6 +4,10 @@ import Header from "../components/Header"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import WeaponTooltip from "../components/WeaponTooltip"
+import { useAuth } from "../contexts/AuthContext"
+import { useCart } from "../contexts/CartContext"
+import { useRouter } from "next/navigation"
+import { ShoppingCart } from "lucide-react"
 
 // Define weapon specifications
 const weaponSpecs = {
@@ -409,21 +413,58 @@ const weaponCategories = [
 ]
 
 export default function Catalog() {
+  const { isAuthenticated } = useAuth()
+  const { addToCart } = useCart()
+  const router = useRouter()
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-100">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 py-8 text-center">
+          <h1 className="text-3xl font-bold mb-6 text-red-600">Доступ к каталогу</h1>
+          <p className="text-xl mb-8">Для просмотра каталога необходимо войти в систему</p>
+          <Button
+            onClick={() => router.push("/auth")}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded text-lg"
+          >
+            Войти в систему
+          </Button>
+        </main>
+        <footer className="bg-gray-800 text-white py-4 text-center">
+          <p>&copy; 2025 City Ammu-Nation. Все права защищены.</p>
+        </footer>
+      </div>
+    )
+  }
+
+  const handleAddToCart = (item: any, categoryName: string) => {
+    // Определяем цену патронов на основе категории
+    let ammoPrice = 0
+    if (item.ammo) {
+      if (item.ammo.includes("55$")) ammoPrice = 55
+      else if (item.ammo.includes("36$")) ammoPrice = 36
+      else if (item.ammo.includes("70$")) ammoPrice = 70
+      else if (item.ammo.includes("130$")) ammoPrice = 130
+    }
+
+    addToCart({
+      id: `${categoryName}-${item.name}`,
+      name: item.name,
+      price: item.price,
+      image: item.image,
+      category: categoryName,
+      ammo: item.ammo,
+      ammoQuantity: item.ammo ? 1 : 0, // По умолчанию 1 пачка для огнестрельного оружия
+      ammoPrice: ammoPrice,
+    })
+  }
+
+  // Rest of the component remains the same until the item mapping
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <Button className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded text-lg" asChild>
-            <a
-              href="https://docs.google.com/forms/d/e/1FAIpQLSc8rM6_-p5z7AtCis2nND5fOiWxWTdy4us7FRN9HOTUHxbNnQ/viewform"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Оформить заказ онлайн
-            </a>
-          </Button>
-        </div>
         <h1 className="text-3xl font-bold mb-6 text-red-600 text-center">Каталог оружия</h1>
         {weaponCategories.map((category, index) => (
           <div key={index} className="mb-8">
@@ -445,6 +486,13 @@ export default function Catalog() {
                   </div>
                   <p className="text-gray-600 mb-2">Цена: ${item.price}</p>
                   {item.ammo && <p className="text-gray-500 mb-4">{item.ammo}</p>}
+                  <Button
+                    onClick={() => handleAddToCart(item, category.name)}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    Добавить в корзину
+                  </Button>
                 </div>
               ))}
             </div>
