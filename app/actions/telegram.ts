@@ -1,34 +1,25 @@
 "use server"
 
-import { formatOrderForTelegram, sendTelegramMessage } from "../utils/telegram"
+import { sendTelegramMessage } from "@/app/utils/telegram"
 
-interface OrderData {
-  customerInfo: {
-    firstName: string
-    lastName: string
-    phone: string
-    idCard: string
-    discordNickname: string
-  }
-  items: Array<{
-    name: string
-    category: string
-    quantity: number
-    price: number
-    ammoQuantity?: number
-    ammoPrice?: number
-  }>
-  totalPrice: number
-  orderDate: string
-}
+export async function sendOrderConfirmationToTelegram(
+  orderId: string,
+  totalAmount: number,
+  items: { name: string; quantity: number; price: number }[],
+) {
+  const itemList = items
+    .map((item) => `- ${item.name} (x${item.quantity}) - $${item.price.toLocaleString()}`)
+    .join("\n")
+  const message = `
+<b>Новый заказ # ${orderId}</b>
+Сумма: <b>$${totalAmount.toLocaleString()}</b>
 
-export async function sendTelegramOrderAction(order: OrderData): Promise<{ success: boolean; error?: string }> {
-  try {
-    const message = formatOrderForTelegram(order)
-    const result = await sendTelegramMessage(message)
-    return result
-  } catch (error: any) {
-    console.error("Error in sendTelegramOrderAction:", error)
-    return { success: false, error: error.message || "Failed to send order to Telegram." }
+<b>Товары:</b>
+${itemList}
+  `
+  const result = await sendTelegramMessage(message)
+  if (!result.success) {
+    console.error("Failed to send Telegram order confirmation:", result.error)
   }
+  return result
 }

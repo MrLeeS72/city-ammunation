@@ -1,594 +1,640 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import Header from "../components/Header"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import Image from "next/image"
+import WeaponTooltip from "../components/WeaponTooltip"
 import { useCart } from "../contexts/CartContext"
-import { WeaponTooltip } from "../components/WeaponTooltip"
-import { ShoppingCart, Plus, Minus } from "lucide-react"
+import { ShoppingCart } from "lucide-react"
 
-interface Product {
-  id: string
-  name: string
-  category: string
-  price: number
-  image: string
-  description: string
-  ammoPrice?: number // Цена за пачку патронов, если применимо
-}
-
-const products: Product[] = [
-  // Melee Weapons
+const weapons = [
   {
-    id: "melee-flick-knife",
-    name: "Выкидной нож",
-    category: "Холодное оружие",
-    price: 150,
-    image: "/public/images/flick-knife.png",
-    description: "Компактный и смертоносный, идеален для скрытых атак.",
-  },
-  {
-    id: "melee-brass-knuckles",
-    name: "Кастет",
-    category: "Холодное оружие",
-    price: 100,
-    image: "/public/images/brass-knuckles.png",
-    description: "Увеличьте силу удара в ближнем бою.",
-  },
-  {
-    id: "melee-army-knife-m9",
-    name: "Армейский нож M9",
-    category: "Холодное оружие",
-    price: 200,
-    image: "/public/images/army-knife-m9.png",
-    description: "Надежный нож для выживания и ближнего боя.",
-  },
-  {
-    id: "melee-machete",
-    name: "Мачете",
-    category: "Холодное оружие",
-    price: 250,
-    image: "/public/images/machete.png",
-    description: "Длинный и острый, отлично подходит для расчистки пути и ближнего боя.",
-  },
-  {
-    id: "melee-cavalry-dagger",
-    name: "Кавалерийский кинжал",
-    category: "Холодное оружие",
-    price: 300,
-    image: "/public/images/cavalry-dagger.png",
-    description: "Элегантный и смертоносный, для ценителей классики.",
-  },
-  {
-    id: "melee-pinch-bar",
-    name: "Монтировка",
-    category: "Холодное оружие",
-    price: 80,
-    image: "/public/images/pinch-bar.png",
-    description: "Простой, но эффективный инструмент для ближнего боя и взлома.",
-  },
-  {
-    id: "melee-hammer",
-    name: "Молоток",
-    category: "Холодное оружие",
-    price: 70,
-    image: "/public/images/hammer.png",
-    description: "Тяжелый и мощный, для нанесения сокрушительных ударов.",
-  },
-  {
-    id: "melee-crowbar",
-    name: "Лом",
-    category: "Холодное оружие",
-    price: 90,
-    image: "/public/images/crowbar.png",
-    description: "Универсальный инструмент для ближнего боя и разрушения.",
-  },
-  {
-    id: "melee-billiard-cue",
-    name: "Бильярдный кий",
-    category: "Холодное оружие",
-    price: 60,
-    image: "/public/images/billiard-cue.png",
-    description: "Неожиданное, но эффективное оружие в умелых руках.",
-  },
-  {
-    id: "melee-golf-hockey-stick",
-    name: "Клюшка для гольфа/хоккея",
-    category: "Холодное оружие",
-    price: 50,
-    image: "/public/images/golf-hockey-stick.png",
-    description: "Спортивный инвентарь, который может стать грозным оружием.",
-  },
-  {
-    id: "melee-fire-extinguisher-refill",
-    name: "Огнетушитель (перезаряжаемый)",
-    category: "Холодное оружие",
-    price: 120,
-    image: "/public/images/fire-extinguisher-refill.png",
-    description: "Может использоваться как дубинка или для создания дымовой завесы.",
-  },
-  {
-    id: "melee-axe",
-    name: "Топор",
-    category: "Холодное оружие",
-    price: 180,
-    image: "/public/images/axe.png",
-    description: "Классическое оружие для ближнего боя, способное нанести серьезный урон.",
-  },
-  {
-    id: "melee-battle-axe",
-    name: "Боевой топор",
-    category: "Холодное оружие",
-    price: 350,
-    image: "/public/images/battle-axe.png",
-    description: "Двусторонний боевой топор для максимального урона.",
-  },
-  {
-    id: "melee-flashlight",
-    name: "Фонарик",
-    category: "Холодное оружие",
-    price: 40,
-    image: "/public/images/flashlight.png",
-    description: "Полезен в темноте и может быть использован для оглушения противника.",
-  },
-  {
-    id: "melee-adjustable-spanner",
-    name: "Разводной ключ",
-    category: "Холодное оружие",
-    price: 60,
-    image: "/public/images/adjustable-spanner.png",
-    description: "Тяжелый металлический инструмент, эффективный в ближнем бою.",
-  },
-  {
-    id: "melee-jerrycan",
-    name: "Канистра с бензином",
-    category: "Холодное оружие",
-    price: 30,
-    image: "/public/images/jerrycan.png",
-    description: "Может быть использована для поджога или как импровизированное оружие.",
-  },
-
-  // Pistols
-  {
-    id: "pistol-revolver",
+    id: "revolver",
     name: "Револьвер",
-    category: "Пистолеты",
-    price: 1000,
     image: "/public/images/revolver.png",
-    description: "Классический револьвер, мощный и надежный.",
-    ammoPrice: 50,
+    description: "Классический револьвер, надежный и мощный.",
+    price: 1500,
+    category: "Пистолеты",
+    damage: 70,
+    fireRate: 20,
+    accuracy: 60,
+    range: 50,
   },
   {
-    id: "pistol-desert-eagle",
+    id: "desert-eagle",
     name: "Desert Eagle",
-    category: "Пистолеты",
-    price: 1500,
     image: "/public/images/desert-eagle.png",
     description: "Легендарный пистолет с огромной останавливающей силой.",
-    ammoPrice: 70,
-  },
-  {
-    id: "pistol-revolver-mk-ii",
-    name: "Револьвер Mk II",
-    category: "Пистолеты",
-    price: 1200,
-    image: "/public/images/revolver-mk-ii.png",
-    description: "Улучшенная версия револьвера с повышенной точностью.",
-    ammoPrice: 60,
-  },
-  {
-    id: "pistol-gold-revolver",
-    name: "Золотой револьвер",
-    category: "Пистолеты",
     price: 2500,
-    image: "/public/images/gold-revolver.png",
-    description: "Роскошный револьвер для тех, кто ценит стиль и мощь.",
-    ammoPrice: 80,
+    category: "Пистолеты",
+    damage: 85,
+    fireRate: 25,
+    accuracy: 65,
+    range: 55,
   },
   {
-    id: "pistol-glock-17",
-    name: "Glock 17",
+    id: "revolver-mk-ii",
+    name: "Револьвер Mk II",
+    image: "/public/images/revolver-mk-ii.png",
+    description: "Модернизированная версия револьвера с улучшенными характеристиками.",
+    price: 2000,
     category: "Пистолеты",
-    price: 800,
+    damage: 75,
+    fireRate: 22,
+    accuracy: 62,
+    range: 52,
+  },
+  {
+    id: "gold-revolver",
+    name: "Золотой Револьвер",
+    image: "/public/images/gold-revolver.png",
+    description: "Эксклюзивный револьвер с золотым покрытием, для ценителей роскоши.",
+    price: 5000,
+    category: "Пистолеты",
+    damage: 70,
+    fireRate: 20,
+    accuracy: 60,
+    range: 50,
+  },
+  {
+    id: "glock-17",
+    name: "Glock 17",
     image: "/public/images/glock-17.png",
     description: "Надежный и популярный полуавтоматический пистолет.",
-    ammoPrice: 40,
+    price: 1200,
+    category: "Пистолеты",
+    damage: 55,
+    fireRate: 40,
+    accuracy: 70,
+    range: 45,
   },
   {
-    id: "pistol-vintage-pistol",
-    name: "Винтажный пистолет",
-    category: "Пистолеты",
-    price: 700,
+    id: "vintage-pistol",
+    name: "Винтажный Пистолет",
     image: "/public/images/vintage-pistol.png",
-    description: "Старинный пистолет с уникальным дизайном.",
-    ammoPrice: 35,
+    description: "Редкий коллекционный пистолет с уникальным дизайном.",
+    price: 3000,
+    category: "Пистолеты",
+    damage: 60,
+    fireRate: 30,
+    accuracy: 60,
+    range: 40,
   },
   {
-    id: "pistol-beretta-m9",
+    id: "beretta-m9",
     name: "Beretta M9",
-    category: "Пистолеты",
-    price: 900,
     image: "/public/images/beretta-m9.png",
     description: "Стандартный армейский пистолет, точный и простой в обращении.",
-    ammoPrice: 45,
+    price: 1300,
+    category: "Пистолеты",
+    damage: 58,
+    fireRate: 38,
+    accuracy: 72,
+    range: 48,
   },
   {
-    id: "pistol-pocket-pistol",
-    name: "Карманный пистолет",
-    category: "Пистолеты",
-    price: 400,
+    id: "pocket-pistol",
+    name: "Карманный Пистолет",
     image: "/public/images/pocket-pistol.png",
-    description: "Маленький и незаметный, идеален для скрытого ношения.",
-    ammoPrice: 25,
+    description: "Компактный пистолет для скрытого ношения.",
+    price: 800,
+    category: "Пистолеты",
+    damage: 45,
+    fireRate: 35,
+    accuracy: 55,
+    range: 30,
   },
   {
-    id: "pistol-sig-sauer-p250",
+    id: "sig-sauer-p250",
     name: "Sig Sauer P250",
-    category: "Пистолеты",
-    price: 850,
     image: "/public/images/sig-sauer-p250.png",
     description: "Модульный пистолет с хорошей эргономикой.",
-    ammoPrice: 42,
+    price: 1400,
+    category: "Пистолеты",
+    damage: 57,
+    fireRate: 39,
+    accuracy: 71,
+    range: 47,
   },
   {
-    id: "pistol-orion-flare-gun",
-    name: "Сигнальный пистолет Orion",
-    category: "Пистолеты",
-    price: 300,
+    id: "orion-flare-gun",
+    name: "Orion Flare Gun",
     image: "/public/images/orion-flare-gun.png",
-    description: "Для подачи сигналов или временного ослепления противника.",
-    ammoPrice: 10,
+    description: "Сигнальный пистолет, может использоваться для отвлечения или подачи сигнала.",
+    price: 300,
+    category: "Пистолеты",
+    damage: 5,
+    fireRate: 1,
+    accuracy: 10,
+    range: 100,
   },
   {
-    id: "pistol-contender",
+    id: "contender",
     name: "Contender",
-    category: "Пистолеты",
-    price: 1100,
     image: "/public/images/contender.png",
-    description: "Однозарядный пистолет с высокой точностью.",
-    ammoPrice: 55,
-  },
-  {
-    id: "pistol-flintlock-rifle",
-    name: "Кремневое ружье",
+    description: "Однозарядный пистолет для точной стрельбы на дальние дистанции.",
+    price: 1800,
     category: "Пистолеты",
-    price: 600,
+    damage: 80,
+    fireRate: 10,
+    accuracy: 80,
+    range: 70,
+  },
+  {
+    id: "flintlock-rifle",
+    name: "Кремневое Ружье",
     image: "/public/images/flintlock-rifle.png",
-    description: "Старинное однозарядное ружье, мощное на близкой дистанции.",
-    ammoPrice: 30,
+    description: "Старинное ружье, мощное, но медленное в перезарядке.",
+    price: 1000,
+    category: "Дробовики",
+    damage: 90,
+    fireRate: 5,
+    accuracy: 40,
+    range: 30,
   },
-
-  // Shotguns
   {
-    id: "shotgun-sawed-off",
+    id: "sawed-off-shotgun",
     name: "Обрез",
-    category: "Дробовики",
-    price: 1200,
     image: "/public/images/sawed-off-shotgun.png",
-    description: "Компактный дробовик с разрушительной мощью ��а близкой дистанции.",
-    ammoPrice: 60,
+    description: "Компактный дробовик для ближнего боя.",
+    price: 900,
+    category: "Дробовики",
+    damage: 95,
+    fireRate: 30,
+    accuracy: 30,
+    range: 20,
   },
   {
-    id: "shotgun-mossberg-590-a1",
+    id: "mossberg-590-a1",
     name: "Mossberg 590A1",
-    category: "Дробовики",
-    price: 1800,
     image: "/public/images/mossberg-590-a1.png",
-    description: "Надежный помповый дробовик для любых ситуаций.",
-    ammoPrice: 80,
-  },
-  {
-    id: "shotgun-serbu",
-    name: "Serbu Super Shorty",
-    category: "Дробовики",
-    price: 1500,
-    image: "/public/images/serbu.png",
-    description: "Ультракомпактный дробовик, идеален для ближнего боя.",
-    ammoPrice: 75,
-  },
-
-  // SMGs
-  {
-    id: "smg-skorpion",
-    name: "Skorpion",
-    category: "Пистолеты-пулеметы",
-    price: 1500,
-    image: "/public/images/skorpion.png",
-    description: "Компактный и скорострельный пистолет-пулемет.",
-    ammoPrice: 70,
-  },
-  {
-    id: "smg-sgw-suppressor",
-    name: "SGW с глушителем",
-    category: "Пистолеты-пулеметы",
+    description: "Надежный помповый дробовик, идеален для самообороны.",
     price: 1800,
+    category: "Дробовики",
+    damage: 85,
+    fireRate: 25,
+    accuracy: 50,
+    range: 35,
+  },
+  {
+    id: "skorpion",
+    name: "Skorpion",
+    image: "/public/images/skorpion.png",
+    description: "Компактный пистолет-пулемет с высокой скорострельностью.",
+    price: 1600,
+    category: "Пистолеты-пулеметы",
+    damage: 40,
+    fireRate: 80,
+    accuracy: 50,
+    range: 40,
+  },
+  {
+    id: "sgw-suppressor",
+    name: "SGW Suppressor",
     image: "/public/images/sgw-suppressor.png",
-    description: "Бесшумный пистолет-пулемет для скрытных операций.",
-    ammoPrice: 85,
-  },
-  {
-    id: "smg-fn-p90",
-    name: "FN P90",
-    category: "Пистолеты-пулеметы",
+    description: "Пистолет-пулемет с интегрированным глушителем для скрытных операций.",
     price: 2200,
-    image: "/public/images/fn-p90.png",
-    description: "Футуристический пистолет-пулемет с высокой емкостью магазина.",
-    ammoPrice: 90,
+    category: "Пистолеты-пулеметы",
+    damage: 45,
+    fireRate: 75,
+    accuracy: 60,
+    range: 45,
   },
   {
-    id: "smg-mp5",
-    name: "MP5",
+    id: "fn-p90",
+    name: "FN P90",
+    image: "/public/images/fn-p90.png",
+    description: "Футуристический пистолет-пулемет с большим магазином.",
+    price: 2800,
     category: "Пистолеты-пулеметы",
-    price: 1700,
+    damage: 50,
+    fireRate: 90,
+    accuracy: 65,
+    range: 50,
+  },
+  {
+    id: "mp5",
+    name: "MP5",
     image: "/public/images/mp5.png",
     description: "Классический пистолет-пулемет, надежный и точный.",
-    ammoPrice: 80,
+    price: 1700,
+    category: "Пистолеты-пулеметы",
+    damage: 48,
+    fireRate: 85,
+    accuracy: 68,
+    range: 48,
   },
   {
-    id: "smg-tec-9",
+    id: "tec-9",
     name: "TEC-9",
-    category: "Пистолеты-пулеметы",
-    price: 1300,
     image: "/public/images/tec-9.png",
-    description: "Простой и эффективный пистолет-пулемет.",
-    ammoPrice: 65,
+    description: "Недорогой пистолет-пулемет с высокой скорострельностью.",
+    price: 1000,
+    category: "Пистолеты-пулеметы",
+    damage: 35,
+    fireRate: 95,
+    accuracy: 45,
+    range: 35,
   },
   {
-    id: "smg-mp5-mkii",
+    id: "mp5-mkii",
     name: "MP5 Mk II",
-    category: "Пистолеты-пулеметы",
-    price: 1900,
     image: "/public/images/mp5-mkii.png",
-    description: "Улучшенная версия MP5 с дополнительными модификациями.",
-    ammoPrice: 88,
-  },
-  {
-    id: "smg-thompson",
-    name: "Thompson",
-    category: "Пистолеты-пулеметы",
+    description: "Улучшенная версия MP5 с повышенной точностью.",
     price: 2000,
+    category: "Пистолеты-пулеметы",
+    damage: 52,
+    fireRate: 80,
+    accuracy: 70,
+    range: 50,
+  },
+  {
+    id: "thompson",
+    name: "Thompson",
     image: "/public/images/thompson.png",
-    description: "Легендарный пистолет-пулемет времен сухого закона.",
-    ammoPrice: 95,
-  },
-
-  // Assault Rifles
-  {
-    id: "ar-ak",
-    name: "AK-47",
-    category: "Штурмовые винтовки",
+    description: 'Легендарный "Томми-ган" времен сухого закона.',
     price: 2500,
+    category: "Пистолеты-пулеметы",
+    damage: 60,
+    fireRate: 70,
+    accuracy: 55,
+    range: 45,
+  },
+  {
+    id: "colt1911",
+    name: "Colt 1911",
+    image: "/public/images/colt1911.png",
+    description: "Культовый пистолет, символ американского оружия.",
+    price: 1600,
+    category: "Пистолеты",
+    damage: 65,
+    fireRate: 30,
+    accuracy: 68,
+    range: 50,
+  },
+  {
+    id: "serbu",
+    name: "Serbu Super Shorty",
+    image: "/public/images/serbu.png",
+    description: "Ультракомпактный дробовик, идеален для ближнего боя.",
+    price: 1100,
+    category: "Дробовики",
+    damage: 90,
+    fireRate: 28,
+    accuracy: 25,
+    range: 15,
+  },
+  {
+    id: "ak",
+    name: "AK-47",
     image: "/public/images/ak.png",
-    description: "Надежная и мощная штурмовая винтовка, известная своей простотой.",
-    ammoPrice: 100,
-  },
-  {
-    id: "ar-bullpup-rifle",
-    name: "Винтовка Булл-пап",
-    category: "Штурмовые винтовки",
-    price: 2800,
-    image: "/public/images/bullpup-rifle.png",
-    description: "Компактная штурмовая винтовка с длинным стволом.",
-    ammoPrice: 110,
-  },
-  {
-    id: "ar-hk-g36",
-    name: "HK G36",
-    category: "Штурмовые винтовки",
+    description: "Всемирно известный автомат, надежный и простой в использовании.",
     price: 3000,
-    image: "/public/images/hk-g36.png",
-    description: "Современная штурмовая винтовка с высокой точностью.",
-    ammoPrice: 120,
+    category: "Автоматы",
+    damage: 65,
+    fireRate: 60,
+    accuracy: 55,
+    range: 80,
   },
   {
-    id: "ar-tar-21",
+    id: "bullpup-rifle",
+    name: "Bullpup Rifle",
+    image: "/public/images/bullpup-rifle.png",
+    description: "Компактная штурмовая винтовка с хорошей точностью.",
+    price: 3500,
+    category: "Автоматы",
+    damage: 68,
+    fireRate: 65,
+    accuracy: 70,
+    range: 85,
+  },
+  {
+    id: "hk-g36",
+    name: "HK G36",
+    image: "/public/images/hk-g36.png",
+    description: "Современная штурмовая винтовка, легкая и точная.",
+    price: 3200,
+    category: "Автоматы",
+    damage: 67,
+    fireRate: 62,
+    accuracy: 72,
+    range: 82,
+  },
+  {
+    id: "tar-21",
     name: "TAR-21",
-    category: "Штурмовые винтовки",
-    price: 2900,
     image: "/public/images/tar-21.png",
     description: "Израильская штурмовая винтовка, надежная и эргономичная.",
-    ammoPrice: 115,
+    price: 3400,
+    category: "Автоматы",
+    damage: 69,
+    fireRate: 63,
+    accuracy: 71,
+    range: 83,
   },
   {
-    id: "ar-m4-a1",
+    id: "m4-a1",
     name: "M4A1",
-    category: "Штурмовые винтовки",
-    price: 2700,
     image: "/public/images/m4-a1.png",
     description: "Стандартная американская штурмовая винтовка, универсальная и эффективная.",
-    ammoPrice: 105,
+    price: 2800,
+    category: "Автоматы",
+    damage: 62,
+    fireRate: 70,
+    accuracy: 75,
+    range: 78,
   },
   {
-    id: "ar-hk-g36-mkii",
+    id: "hk-g36-mkii",
     name: "HK G36 Mk II",
-    category: "Штурмовые винтовки",
-    price: 3200,
     image: "/public/images/hk-g36-mkii.png",
-    description: "Улучшенная версия G36 с дополнительными возможностями.",
-    ammoPrice: 125,
+    description: "Улучшенная версия G36 с повышенной огневой мощью.",
+    price: 3800,
+    category: "Автоматы",
+    damage: 70,
+    fireRate: 68,
+    accuracy: 73,
+    range: 86,
   },
   {
-    id: "ar-aksu",
-    name: "AKS-74U",
-    category: "Штурмовые винтовки",
-    price: 2600,
+    id: "aksu",
+    name: "AKSU-74",
     image: "/public/images/aksu.png",
-    description: "Компактная версия АК-74, идеальна для ближнего и среднего боя.",
-    ammoPrice: 102,
+    description: "Компактная версия АК-74, идеальна для ближнего боя.",
+    price: 2700,
+    category: "Автоматы",
+    damage: 60,
+    fireRate: 70,
+    accuracy: 60,
+    range: 70,
   },
   {
-    id: "ar-ar-15-tx-15",
+    id: "ar-15-tx-15",
     name: "AR-15 TX-15",
-    category: "Штурмовые винтовки",
-    price: 3100,
     image: "/public/images/ar-15-tx-15.png",
-    description: "Модифицированная AR-15 с улучшенной эргономикой и точностью.",
-    ammoPrice: 118,
+    description: "Высокоточная винтовка на базе AR-15, для спортивной стрельбы.",
+    price: 4000,
+    category: "Винтовки",
+    damage: 75,
+    fireRate: 50,
+    accuracy: 90,
+    range: 100,
   },
   {
-    id: "ar-colt1911",
-    name: "Colt 1911",
-    category: "Пистолеты",
-    price: 950,
-    image: "/public/images/colt1911.png",
-    description: "Легендарный пистолет, символ американского оружия.",
-    ammoPrice: 48,
+    id: "flick-knife",
+    name: "Выкидной нож",
+    image: "/public/images/flick-knife.png",
+    description: "Компактный и быстрый нож для ближнего боя.",
+    price: 150,
+    category: "Холодное оружие",
+    damage: 20,
+    fireRate: 100,
+    accuracy: 90,
+    range: 1,
+  },
+  {
+    id: "brass-knuckles",
+    name: "Кастет",
+    image: "/public/images/brass-knuckles.png",
+    description: "Увеличивает урон в рукопашном бою.",
+    price: 100,
+    category: "Холодное оружие",
+    damage: 25,
+    fireRate: 120,
+    accuracy: 95,
+    range: 1,
+  },
+  {
+    id: "army-knife-m9",
+    name: "Армейский нож M9",
+    image: "/public/images/army-knife-m9.png",
+    description: "Стандартный армейский нож, универсален в использовании.",
+    price: 200,
+    category: "Холодное оружие",
+    damage: 22,
+    fireRate: 95,
+    accuracy: 92,
+    range: 1,
+  },
+  {
+    id: "machete",
+    name: "Мачете",
+    image: "/public/images/machete.png",
+    description: "Длинный и тяжелый нож, эффективен против нескольких противников.",
+    price: 300,
+    category: "Холодное оружие",
+    damage: 30,
+    fireRate: 80,
+    accuracy: 85,
+    range: 2,
+  },
+  {
+    id: "cavalry-dagger",
+    name: "Кавалерийский кинжал",
+    image: "/public/images/cavalry-dagger.png",
+    description: "Элегантный и острый кинжал, для точных ударов.",
+    price: 400,
+    category: "Холодное оружие",
+    damage: 28,
+    fireRate: 90,
+    accuracy: 93,
+    range: 1,
+  },
+  {
+    id: "pinch-bar",
+    name: "Монтировка",
+    image: "/public/images/pinch-bar.png",
+    description: "Тяжелый инструмент, может использоваться как оружие.",
+    price: 50,
+    category: "Холодное оружие",
+    damage: 18,
+    fireRate: 70,
+    accuracy: 70,
+    range: 2,
+  },
+  {
+    id: "hammer",
+    name: "Молоток",
+    image: "/public/images/hammer.png",
+    description: "Простой, но эффективный инструмент для ближнего боя.",
+    price: 40,
+    category: "Холодное оружие",
+    damage: 15,
+    fireRate: 80,
+    accuracy: 75,
+    range: 1,
+  },
+  {
+    id: "crowbar",
+    name: "Лом",
+    image: "/public/images/crowbar.png",
+    description: "Длинный и прочный лом, для нанесения сильных ударов.",
+    price: 60,
+    category: "Холодное оружие",
+    damage: 20,
+    fireRate: 65,
+    accuracy: 68,
+    range: 2,
+  },
+  {
+    id: "billiard-cue",
+    name: "Бильярдный кий",
+    image: "/public/images/billiard-cue.png",
+    description: "Легкий и длинный кий, для быстрых ударов.",
+    price: 30,
+    category: "Холодное оружие",
+    damage: 12,
+    fireRate: 85,
+    accuracy: 80,
+    range: 2,
+  },
+  {
+    id: "golf-hockey-stick",
+    name: "Клюшка для гольфа/хоккея",
+    image: "/public/images/golf-hockey-stick.png",
+    description: "Спортивный инвентарь, может быть использован как импровизированное оружие.",
+    price: 70,
+    category: "Холодное оружие",
+    damage: 17,
+    fireRate: 70,
+    accuracy: 72,
+    range: 2,
+  },
+  {
+    id: "fire-extinguisher-refill",
+    name: "Огнетушитель",
+    image: "/public/images/fire-extinguisher-refill.png",
+    description: "Может использоваться для тушения пожаров или как тяжелое оружие.",
+    price: 120,
+    category: "Прочее",
+    damage: 10,
+    fireRate: 5,
+    accuracy: 30,
+    range: 3,
+  },
+  {
+    id: "axe",
+    name: "Топор",
+    image: "/public/images/axe.png",
+    description: "Классический топор, для рубки дров или врагов.",
+    price: 250,
+    category: "Холодное оружие",
+    damage: 35,
+    fireRate: 60,
+    accuracy: 70,
+    range: 2,
+  },
+  {
+    id: "battle-axe",
+    name: "Боевой топор",
+    image: "/public/images/battle-axe.png",
+    description: "Тяжелый боевой топор, для максимального урона.",
+    price: 500,
+    category: "Холодное оружие",
+    damage: 45,
+    fireRate: 50,
+    accuracy: 65,
+    range: 2,
+  },
+  {
+    id: "flashlight",
+    name: "Фонарик",
+    image: "/public/images/flashlight.png",
+    description: "Освещает путь в темноте, может использоваться для оглушения.",
+    price: 20,
+    category: "Прочее",
+    damage: 5,
+    fireRate: 10,
+    accuracy: 40,
+    range: 1,
+  },
+  {
+    id: "adjustable-spanner",
+    name: "Разводной ключ",
+    image: "/public/images/adjustable-spanner.png",
+    description: "Инструмент, который может пригодиться в драке.",
+    price: 35,
+    category: "Холодное оружие",
+    damage: 14,
+    fireRate: 75,
+    accuracy: 70,
+    range: 1,
+  },
+  {
+    id: "jerrycan",
+    name: "Канистра с бензином",
+    image: "/public/images/jerrycan.png",
+    description: "Для заправки транспорта или создания огненных ловушек.",
+    price: 80,
+    category: "Прочее",
+    damage: 0,
+    fireRate: 0,
+    accuracy: 0,
+    range: 5,
   },
 ]
 
 export default function Catalog() {
-  const { addItem } = useCart()
   const [selectedCategory, setSelectedCategory] = useState("Все")
-  const [quantities, setQuantities] = useState<{ [key: string]: number }>({})
-  const [ammoQuantities, setAmmoQuantities] = useState<{ [key: string]: number }>({})
+  const { addToCart } = useCart()
 
-  const handleQuantityChange = (productId: string, value: string) => {
-    const num = Number.parseInt(value)
-    setQuantities((prev) => ({ ...prev, [productId]: isNaN(num) ? 0 : num }))
-  }
+  const categories = ["Все", ...new Set(weapons.map((weapon) => weapon.category))]
 
-  const handleAmmoQuantityChange = (productId: string, value: string) => {
-    const num = Number.parseInt(value)
-    setAmmoQuantities((prev) => ({ ...prev, [productId]: isNaN(num) ? 0 : num }))
-  }
-
-  const filteredProducts =
-    selectedCategory === "Все" ? products : products.filter((product) => product.category === selectedCategory)
-
-  const categories = ["Все", ...Array.from(new Set(products.map((p) => p.category)))]
+  const filteredWeapons =
+    selectedCategory === "Все" ? weapons : weapons.filter((weapon) => weapon.category === selectedCategory)
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8 text-red-600 text-center">Наш каталог</h1>
+        <h1 className="text-4xl font-bold mb-8 text-red-600 text-center">Каталог оружия</h1>
 
-        {/* Filters */}
-        <div className="mb-8 flex flex-col sm:flex-row justify-center items-center gap-4">
-          <Label htmlFor="category-filter" className="text-lg font-semibold text-gray-700">
-            Категория:
-          </Label>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger id="category-filter" className="w-[200px] bg-white">
-              <SelectValue placeholder="Выберите категорию" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex flex-wrap justify-center gap-3 mb-8">
+          {categories.map((category) => (
+            <Button
+              key={category}
+              variant={selectedCategory === category ? "default" : "outline"}
+              onClick={() => setSelectedCategory(category)}
+              className={
+                selectedCategory === category
+                  ? "bg-red-600 hover:bg-red-700 text-white"
+                  : "border-red-600 text-red-600 hover:bg-red-50"
+              }
+            >
+              {category}
+            </Button>
+          ))}
         </div>
 
-        {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredProducts.map((product) => (
-            <WeaponTooltip
-              key={product.id}
-              name={product.name}
-              description={product.description}
-              price={product.price}
-              image={product.image}
-              ammoPrice={product.ammoPrice}
-            >
-              <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardHeader className="flex flex-col items-center text-center p-4 pb-2">
-                  <Image
-                    src={product.image || "/placeholder.svg"}
-                    alt={product.name}
-                    width={120}
-                    height={120}
-                    className="object-contain mb-2"
-                  />
-                  <CardTitle className="text-xl font-bold text-red-700">{product.name}</CardTitle>
-                  <p className="text-gray-800 font-semibold text-lg">${product.price.toLocaleString()}</p>
+          {filteredWeapons.map((weapon) => (
+            <WeaponTooltip key={weapon.id} weapon={weapon}>
+              <Card className="flex flex-col h-full hover:shadow-lg transition-shadow duration-200">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-semibold text-red-600">{weapon.name}</CardTitle>
+                  <p className="text-sm text-gray-500">{weapon.category}</p>
                 </CardHeader>
-                <CardContent className="flex-grow flex flex-col justify-between p-4 pt-0">
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-3">{product.description}</p>
-                  <div className="flex items-center justify-center space-x-2 mb-3">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleQuantityChange(product.id, String((quantities[product.id] || 0) - 1))
-                      }}
-                      disabled={(quantities[product.id] || 0) <= 0}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <Input
-                      type="number"
-                      value={quantities[product.id] || 0}
-                      onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                      className="w-20 text-center"
-                      min="0"
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleQuantityChange(product.id, String((quantities[product.id] || 0) + 1))
-                      }}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  {product.ammoPrice !== undefined && (
-                    <div className="flex flex-col items-center mt-2">
-                      <Label htmlFor={`ammo-quantity-${product.id}`} className="text-sm text-gray-700 mb-1">
-                        Патроны (пачек):
-                      </Label>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleAmmoQuantityChange(product.id, String((ammoQuantities[product.id] || 0) - 1))
-                          }}
-                          disabled={(ammoQuantities[product.id] || 0) <= 0}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <Input
-                          id={`ammo-quantity-${product.id}`}
-                          type="number"
-                          value={ammoQuantities[product.id] || 0}
-                          onChange={(e) => handleAmmoQuantityChange(product.id, e.target.value)}
-                          className="w-20 text-center"
-                          min="0"
-                        />
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleAmmoQuantityChange(product.id, String((ammoQuantities[product.id] || 0) + 1))
-                          }}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">${product.ammoPrice.toLocaleString()} за пачку</p>
-                    </div>
-                  )}
+                <CardContent className="flex-grow flex items-center justify-center p-4">
+                  <Image
+                    src={weapon.image || "/placeholder.svg"}
+                    alt={weapon.name}
+                    width={150}
+                    height={150}
+                    className="object-contain max-h-[150px]"
+                  />
                 </CardContent>
-                <CardFooter className="p-4 pt-0">
+                <CardFooter className="flex flex-col items-center pt-2">
+                  <p className="text-2xl font-bold text-gray-800 mb-2">${weapon.price.toLocaleString()}</p>
                   <Button
-                    className="w-full bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
-                    onClick={() => addItem(product, quantities[product.id] || 0, ammoQuantities[product.id] || 0)}
-                    disabled={(quantities[product.id] || 0) <= 0 && (ammoQuantities[product.id] || 0) <= 0}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white"
+                    onClick={(e) => {
+                      e.stopPropagation() // Prevent tooltip from closing immediately
+                      addToCart(weapon)
+                    }}
                   >
-                    <ShoppingCart className="h-5 w-5" />
+                    <ShoppingCart className="mr-2 h-4 w-4" />
                     Добавить в корзину
                   </Button>
                 </CardFooter>

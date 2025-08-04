@@ -1,80 +1,80 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Header from "../components/Header"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { MapPin, DollarSign, Clock, Shield } from "lucide-react"
 
 export default function ShootingRange() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8 text-red-600 text-center">Тир Ammu-Nation</h1>
+        <h1 className="text-4xl font-bold mb-6 text-red-600 text-center">Тир</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <Card className="text-center">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <MapPin className="mr-2 h-5 w-5 text-red-600" />
+              Адрес
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>
+              К вашим услугам крытый тир в центральном отделение "Ammu-Nation" по адресу: Cypress Flats, Popular Street,
+              9275
+            </p>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-2xl text-red-600">Пистолеты</CardTitle>
+              <CardTitle className="flex items-center">
+                <DollarSign className="mr-2 h-5 w-5 text-red-600" />
+                Стоимость
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 mb-4">
-                Отточите свои навыки стрельбы из пистолета на наших специально оборудованных дорожках. Идеально для
-                новичков и опытных стрелков.
-              </p>
-              <ul className="list-disc list-inside text-left text-gray-600 mb-4">
-                <li>Дорожка: $50/час</li>
-                <li>Патроны: от $10/пачка</li>
-                <li>Аренда пистолета: $20</li>
-              </ul>
-              <Button className="bg-red-600 hover:bg-red-700">Забронировать</Button>
+              <p>Стоимость 1 (одного) захода для тренировки в тире: от $ 2000</p>
+              <p>В стоимость входит аренда пистолета Beretta M9 и 100 патронов.</p>
             </CardContent>
           </Card>
 
-          <Card className="text-center">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-2xl text-red-600">Дробовики</CardTitle>
+              <CardTitle className="flex items-center">
+                <Clock className="mr-2 h-5 w-5 text-red-600" />
+                Ограничения
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 mb-4">
-                Почувствуйте мощь дробовика. Наши дорожки подходят для стрельбы по мишеням и отработки тактических
-                навыков.
-              </p>
-              <ul className="list-disc list-inside text-left text-gray-600 mb-4">
-                <li>Дорожка: $75/час</li>
-                <li>Патроны: от $15/пачка</li>
-                <li>Аренда дробовика: $30</li>
-              </ul>
-              <Button className="bg-red-600 hover:bg-red-700">Забронировать</Button>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center">
-            <CardHeader>
-              <CardTitle className="text-2xl text-red-600">Автоматы и винтовки</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-700 mb-4">
-                Для тех, кто ищет серьезные испытания. Доступны различные калибры и типы оружия.
-              </p>
-              <ul className="list-disc list-inside text-left text-gray-600 mb-4">
-                <li>Дорожка: $100/час</li>
-                <li>Патроны: от $20/пачка</li>
-                <li>Аренда автомата/винтовки: $50</li>
-              </ul>
-              <Button className="bg-red-600 hover:bg-red-700">Забронировать</Button>
+              <p>Гражданским разрешено посещать тренировочные занятия не более 1 раза в 24 часа</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="mt-12 text-center">
-          <h2 className="text-3xl font-bold mb-4 text-gray-800">Правила посещения</h2>
-          <p className="text-gray-700 max-w-3xl mx-auto">
-            Для посещения тира необходимо иметь действующую лицензию на оружие или пройти вводный инструктаж с нашим
-            специалистом. Все посетители должны соблюдать правила безопасности.
-          </p>
-          <Button asChild variant="outline" className="mt-6 bg-transparent">
-            <Link href="/licensing">Узнать о лицензировании</Link>
-          </Button>
-        </div>
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Shield className="mr-2 h-5 w-5 text-red-600" />
+              Требования
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc list-inside space-y-2">
+              <li>Посетить тир может любой гражданин штата.</li>
+              <li>Для посещения тира необходима только ваша ID card и оплата услуг тира.</li>
+              <li>Для работников структур правопорядка действуют льготные условия тренировок в тире.</li>
+              <li>
+                Для тренировки в тире разрешено использование своего оружия, но только при наличии у вас действующей
+                лицензии на ношение и хранение огнестрельного оружия.
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <p className="text-sm text-gray-600 italic">
+          Цены на услуги тира регулирует правительство штата, все претензии и недовольства просьба отправлять в офис
+          губернатора.
+        </p>
       </main>
       <footer className="bg-gray-800 text-white py-4 text-center">
         <p>&copy; 2025 City Ammu-Nation. Все права защищены.</p>

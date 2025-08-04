@@ -1,88 +1,87 @@
 "use server"
 
-import { supabaseServer } from "@/lib/db" // Импортируем серверный клиент Supabase
+import { createServerSupabaseClient } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import type { CartItem } from "@/app/contexts/CartContext" // Импортируем тип CartItem
 
-interface OrderData {
-  customerInfo: {
-    firstName: string
-    lastName: string
-    phone: string
-    idCard: string
-    discordNickname: string
-  }
-  items: CartItem[]
-  totalPrice: number
-  orderDate: string
-}
+export async function createOrder(
+  userId: string,
+  items: { productId: string; quantity: number; price: number }[],
+  totalAmount: number,
+) {
+  const supabase = createServerSupabaseClient()
 
-interface StoredOrder {
-  id: string
-  userId: string
-  orderDate: string
-  totalPrice: number
-  itemsJson: CartItem[]
-  createdAt: string
-}
-
-/**
- * Добавляет новый заказ в базу данных.
- */
-export async function addOrder(userId: string, order: OrderData): Promise<{ success: boolean; error?: string }> {
   try {
-    const { data, error } = await supabaseServer
+    const { data: order, error: orderError } = await supabase
       .from("orders")
-      .insert({
-        user_id: userId,
-        order_date: order.orderDate,
-        total_price: order.totalPrice,
-        items_json: order.items, // Supabase автоматически преобразует JSONB
-      })
-      .select() // Возвращаем вставленные данные
+      .insert({ user_id: userId, total_amount: totalAmount, status: "pending" })
+      .select()
+      .single()
 
-    if (error) {
-      console.error("Ошибка Supabase при добавлении заказа:", error)
-      return { success: false, error: error.message }
+    if (orderError) {
+      console.error("Error creating order:", orderError)
+      throw new Error(`Failed to create order: ${orderError.message}`)
     }
 
-    revalidatePath("/profile") // Перевалидируем страницу профиля, чтобы обновить историю заказов
-    return { success: true }
-  } catch (error) {
-    console.error("Непредвиденная ошибка при добавлении заказа:", error)
-    return { success: false, error: "Не удалось добавить заказ." }
-  }
-}
-
-/**
- * Получает историю заказов для конкретного пользователя.
- */
-export async function getOrders(userId: string): Promise<StoredOrder[]> {
-  try {
-    const { data, error } = await supabaseServer
-      .from("orders")
-      .select("id, user_id, order_date, total_price, items_json, created_at")
-      .eq("user_id", userId)
-      .order("order_date", { ascending: false })
-
-    if (error) {
-      console.error("Ошибка Supabase при получении истории заказов:", error)
-      return []
-    }
-
-    // Преобразуем данные к нужному формату
-    const orders: StoredOrder[] = data.map((order: any) => ({
-      id: order.id,
-      userId: order.user_id,
-      orderDate: order.order_date,
-      totalPrice: order.total_price,
-      itemsJson: order.items_json,
-      createdAt: order.created_at,
+    const orderItems = items.map((item) => ({
+      order_id: order.id,
+      product_id: item.productId,
+      quantity: item.quantity,
+      price_at_purchase: item.price,
     }))
 
-    return orders
-  } catch (error) {
-    console.error("Непредвиденная ошибка при получении истории заказов:", error)
-    return []
+    const { error: orderItemsError } = await supabase.from("order_items").insert(orderItems)
+
+    if (orderItemsError) {
+      console.error("Error creating order items:", orderItemsError)
+      throw new Error(`Failed to create order items: ${orderItemsError.message}`)
+    }
+
+    revalidatePath("/profile") // Revalidate profile page to show new order
+    return { success: true, orderId: order.id }
+  } catch (error: any) {
+    console.error("Server Action Error (createOrder):", error)
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getOrdersByUserId(userId: string) {
+  const supabase = createServerSupabaseClient()
+
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select(`
+        id,
+        total_amount,
+        status,
+        created_at,
+        order_items (
+          product_id,
+          quantity,
+          price_at_purchase
+        )
+      `)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("Error fetching orders:", error)
+      throw new Error(`Failed to fetch orders: ${error.message}`)
+    }
+
+    // For simplicity, we're assuming product_id can be mapped to a name.
+    // In a real app, you'd likely join with a products table or fetch product details.
+    const ordersWithProductNames = data?.map((order) => ({
+      ...order,
+      order_items: order.order_items.map((item) => ({
+        ...item,
+        product_name: `Product ${item.product_id.substring(0, 4)}...`, // Placeholder name
+      })),
+    }))
+
+    return { success: true, orders: ordersWithProductNames || [] }
+  } catch (error: any) {
+    console.error("Server Action Error (getOrdersByUserId):", error)
+    return { success: false, error: error.message, orders: [] }
   }
 }
