@@ -16,9 +16,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { User, Phone, CreditCard, MessageCircle, Camera, History, Package, Loader2 } from "lucide-react"
 import Image from "next/image"
 
-// Импортируем Server Actions из lib/api
-import { getProfile, updateProfile, uploadProfilePicture, createProfileIfNotFound } from "@/lib/api"
-import { getOrders } from "@/lib/api"
+// Обновим импорт Server Actions
+// Было: import { getProfile, updateProfile, uploadProfilePicture, createProfileIfNotFound } from "@/lib/api"
+// Стало:
+import { getProfile, updateProfile, uploadProfilePicture, createProfileIfNotFound } from "../lib/api"
+import { getOrders } from "../lib/api"
 
 interface UserProfileData {
   id: string
