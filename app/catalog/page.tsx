@@ -4,8 +4,9 @@ import Header from "../components/Header"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import WeaponTooltip from "../components/WeaponTooltip"
+import AddToCartButton from "../components/AddToCartButton"
 
-// Define weapon specifications
+// Define weapon specifications (keeping existing specs)
 const weaponSpecs = {
   // Категория "9мм"
   "Карманный пистолет": {
@@ -68,8 +69,6 @@ const weaponSpecs = {
     manufacturer: "Orion",
     additionalInfo: "Используется для подачи сигналов и освещения местности",
   },
-
-  // Категория "A"
   "Colt 1911": {
     caliber: ".45 ACP",
     capacity: "11 патронов",
@@ -120,8 +119,6 @@ const weaponSpecs = {
     manufacturer: "Smith & Wesson",
     additionalInfo: "Коллекционная версия с золотым покрытием и гравировкой",
   },
-
-  // Категория "B"
   "MOSSBERG 590 A1": {
     caliber: "12 калибр",
     capacity: "8+1 патронов",
@@ -172,8 +169,6 @@ const weaponSpecs = {
     manufacturer: "Thompson/Center",
     additionalInfo: "Современная реплика исторического дуэльного пистолета",
   },
-
-  // Категория "C"
   "TEC-9": {
     caliber: "9×19мм Parabellum",
     capacity: "32 патрона",
@@ -244,8 +239,6 @@ const weaponSpecs = {
     manufacturer: "Auto-Ordnance",
     additionalInfo: "Легендарный пистолет-пулемет времен Второй мировой войны",
   },
-
-  // Категория "D"
   "AR-15/TX-15": {
     caliber: "5.56×45мм NATO",
     capacity: "30 патронов",
@@ -326,6 +319,19 @@ const weaponSpecs = {
     manufacturer: "Colt",
     additionalInfo: "Укороченная версия винтовки M16, стоящая на вооружении армии США",
   },
+}
+
+// Helper function to parse ammo price from string
+const parseAmmoPrice = (ammoString?: string) => {
+  if (!ammoString) return undefined
+  const match = ammoString.match(/(\d+)шт\/(\d+)\$/)
+  if (match) {
+    return {
+      packSize: Number.parseInt(match[1]),
+      price: Number.parseInt(match[2]),
+    }
+  }
+  return undefined
 }
 
 const weaponCategories = [
@@ -429,24 +435,53 @@ export default function Catalog() {
           <div key={index} className="mb-8">
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">{category.name}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {category.items.map((item, itemIndex) => (
-                <div key={itemIndex} className="bg-white p-4 rounded-lg shadow-md">
-                  <Image
-                    src={item.image || "/placeholder.svg"}
-                    alt={item.name}
-                    width={400}
-                    height={300}
-                    className="w-full h-48 object-contain bg-white mb-4 rounded border"
-                  />
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-xl font-semibold">{item.name}</h3>
-                    {/* Only show tooltip for firearms (not for items in the first category) */}
-                    {index > 0 && weaponSpecs[item.name] && <WeaponTooltip specs={weaponSpecs[item.name]} />}
+              {category.items.map((item, itemIndex) => {
+                const ammoData = parseAmmoPrice(item.ammo)
+                const cartItem = {
+                  id: `${category.name}-${item.name}`,
+                  name: item.name,
+                  price: item.price,
+                  image: item.image || "/placeholder.svg",
+                  category: category.name,
+                  ammoPrice: ammoData?.price,
+                  ammoPackSize: ammoData?.packSize,
+                }
+
+                return (
+                  <div key={itemIndex} className="bg-white p-4 rounded-lg shadow-md">
+                    <Image
+                      src={item.image || "/placeholder.svg"}
+                      alt={item.name}
+                      width={400}
+                      height={300}
+                      className="w-full h-48 object-contain bg-white mb-4 rounded border"
+                    />
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-xl font-semibold">{item.name}</h3>
+                      {/* Only show tooltip for firearms (not for items in the first category) */}
+                      {index > 0 && weaponSpecs[item.name] && <WeaponTooltip specs={weaponSpecs[item.name]} />}
+                    </div>
+                    <p className="text-gray-600 mb-2">Цена: ${item.price}</p>
+                    {item.ammo && <p className="text-gray-500 mb-4">{item.ammo}</p>}
+                    <AddToCartButton item={cartItem} />
+                    {item.ammo && (
+                      <div className="mt-2">
+                        <AddToCartButton
+                          item={{
+                            id: `${category.name}-${item.name}-ammo`,
+                            name: `Патроны для ${item.name}`,
+                            price: ammoData?.price || 0,
+                            image: "/placeholder.svg?height=100&width=100",
+                            category: "Патроны",
+                            ammoPackSize: ammoData?.packSize,
+                          }}
+                          isAmmoOnly={true}
+                        />
+                      </div>
+                    )}
                   </div>
-                  <p className="text-gray-600 mb-2">Цена: ${item.price}</p>
-                  {item.ammo && <p className="text-gray-500 mb-4">{item.ammo}</p>}
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         ))}
