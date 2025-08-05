@@ -1,77 +1,47 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const orderData = await request.json()
+    const { message, chatId } = await request.json()
 
-    // Изменено: удален NEXT_PUBLIC_ префикс
+    if (!message || !chatId) {
+      return NextResponse.json({ error: "Message and chatId are required" }, { status: 400 })
+    }
+
     const botToken = process.env.TELEGRAM_BOT_TOKEN
-    const chatId = process.env.TELEGRAM_CHAT_ID
+    const telegramChatId = process.env.TELEGRAM_CHAT_ID
 
-    if (!botToken || !chatId) {
-      return NextResponse.json({ error: "Telegram configuration missing" }, { status: 500 })
+    if (!botToken || !telegramChatId) {
+      console.error("Telegram bot token or chat ID is not configured.")
+      return NextResponse.json({ error: "Telegram bot not configured" }, { status: 500 })
     }
 
-    // Build message
-    let message = `🛒 *Новый заказ из City Ammu-Nation*\n\n`
-
-    // Add user info if available
-    if (orderData.user) {
-      message += `👤 *Клиент:* ${orderData.user.firstName} ${orderData.user.lastName}\n`
-      message += `📱 *Телефон:* ${orderData.user.phone}\n`
-      message += `💬 *Discord:* ${orderData.user.postalCode}\n`
-      if (orderData.user.idCard) {
-        message += `🆔 *ID-карта:* ${orderData.user.idCard}\n`
-      }
-      message += `\n`
-    }
-
-    message += `📦 *Товары:*\n`
-
-    orderData.items.forEach((item: any, index: number) => {
-      message += `${index + 1}. *${item.name}*\n`
-      message += `   Количество: ${item.quantity} шт.\n`
-      message += `   Цена за единицу: $${item.price}\n`
-
-      if (item.ammoQuantity && item.ammoPrice) {
-        message += `   Патроны: ${item.ammoQuantity} пачек по $${item.ammoPrice}\n`
-      }
-
-      const itemTotal =
-        item.price * item.quantity + (item.ammoPrice && item.ammoQuantity ? item.ammoPrice * item.ammoQuantity : 0)
-      message += `   Итого за товар: $${itemTotal}\n\n`
-    })
-
-    message += `💰 *Общая сумма заказа: $${orderData.total}*\n\n`
-    message += `🕐 *Время заказа:* ${new Date().toLocaleString("ru-RU")}`
-
-    // Send to Telegram
-    const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        chat_id: chatId,
+        chat_id: telegramChatId,
         text: message,
-        parse_mode: "Markdown",
+        parse_mode: "HTML", // Or MarkdownV2
       }),
     })
 
-    if (!telegramResponse.ok) {
-      const errorData = await telegramResponse.json()
-      console.error("Telegram API error:", errorData)
-      throw new Error(`Telegram API error: ${errorData.description || "Unknown error"}`)
+    const data = await response.json()
+
+    if (!response.ok) {
+      console.error("Telegram API error:", data)
+      return NextResponse.json(
+        { error: data.description || "Failed to send message to Telegram" },
+        { status: response.status },
+      )
     }
 
-    const result = await telegramResponse.json()
-
-    return NextResponse.json({
-      success: true,
-      messageId: result.result.message_id,
-    })
+    return NextResponse.json({ success: true, messageId: data.result.message_id })
   } catch (error) {
-    console.error("Error in telegram API route:", error)
-    return NextResponse.json({ error: "Failed to send message to Telegram" }, { status: 500 })
+    console.error("Error in Telegram API route:", error)
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 }

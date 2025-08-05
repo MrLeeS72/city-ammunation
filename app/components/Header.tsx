@@ -1,118 +1,131 @@
 "use client"
 
 import Link from "next/link"
-import { ShoppingCart, User, LogOut } from "lucide-react"
-import { useCart } from "../context/CartContext"
-import { useAuth } from "../context/AuthContext"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { MenuIcon, ShoppingCartIcon, UserIcon } from "lucide-react"
 import Image from "next/image"
+import { useCart } from "@/app/context/CartContext"
+import { useAuth } from "@/app/context/AuthContext"
 
 export default function Header() {
-  const { state: cartState } = useCart()
+  const { cart } = useCart()
   const { user, logout } = useAuth()
 
-  const cartItemsCount = cartState.items.reduce((total, item) => total + item.quantity, 0)
+  const totalItemsInCart = cart.reduce((sum, item) => sum + item.quantity, 0)
 
   return (
-    <header className="bg-black text-white p-4 sticky top-0 z-50 shadow-lg">
-      <nav className="container mx-auto flex justify-between items-center">
-        <Link href="/" className="text-2xl font-bold text-red-600">
-          City Ammu-Nation
+    <header className="fixed top-0 left-0 right-0 z-50 bg-gray-900 text-white shadow-md">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+        <Link className="flex items-center gap-2" href="/">
+          <Image src="/placeholder-logo.png" alt="City Ammu-Nation Logo" width={40} height={40} />
+          <span className="text-lg font-semibold">City Ammu-Nation</span>
         </Link>
-
-        <ul className="flex space-x-4 items-center">
-          <li>
-            <Link href="/" className="hover:text-red-600 transition-colors">
-              Главная
-            </Link>
-          </li>
-          <li>
-            <Link href="/catalog" className="hover:text-red-600 transition-colors">
-              Каталог
-            </Link>
-          </li>
-          <li>
-            <Link href="/licensing" className="hover:text-red-600 transition-colors">
-              Лицензирование
-            </Link>
-          </li>
-          <li>
-            <Link href="/shooting-range" className="hover:text-red-600 transition-colors">
-              Тир
-            </Link>
-          </li>
-          <li>
-            <Link href="/vacancies" className="hover:text-red-600 transition-colors">
-              Вакансии
-            </Link>
-          </li>
-          <li>
-            <Link href="/contacts" className="hover:text-red-600 transition-colors">
-              Контакты
-            </Link>
-          </li>
-
-          {/* Cart Icon */}
-          <li>
-            <Link href="/cart" className="relative hover:text-red-600 flex items-center transition-colors">
-              <ShoppingCart className="h-6 w-6" />
-              {cartItemsCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
-                  {cartItemsCount}
-                </span>
-              )}
-            </Link>
-          </li>
-
-          {/* User Menu */}
-          <li>
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="text-white hover:text-red-600 hover:bg-transparent flex items-center space-x-2"
-                  >
-                    {user.avatar ? (
-                      <Image
-                        src={user.avatar || "/placeholder.svg"}
-                        alt="Аватар"
-                        width={24}
-                        height={24}
-                        className="rounded-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-6 w-6" />
-                    )}
-                    <span>{`${user.firstName} ${user.lastName}`.trim()}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">Профиль</Link>
+        <nav className="hidden space-x-4 md:flex">
+          <Link className="font-medium hover:text-red-400" href="/catalog">
+            Каталог
+          </Link>
+          <Link className="font-medium hover:text-red-400" href="/shooting-range">
+            Тир
+          </Link>
+          <Link className="font-medium hover:text-red-400" href="/licensing">
+            Лицензирование
+          </Link>
+          <Link className="font-medium hover:text-red-400" href="/contacts">
+            Контакты
+          </Link>
+          <Link className="font-medium hover:text-red-400" href="/vacancies">
+            Вакансии
+          </Link>
+        </nav>
+        <div className="flex items-center gap-4">
+          <Link href="/cart" className="relative">
+            <Button variant="ghost" size="icon" className="hover:bg-gray-700">
+              <ShoppingCartIcon className="h-6 w-6" />
+              <span className="sr-only">Корзина</span>
+            </Button>
+            {totalItemsInCart > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white">
+                {totalItemsInCart}
+              </span>
+            )}
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="hover:bg-gray-700">
+                <UserIcon className="h-6 w-6" />
+                <span className="sr-only">Профиль пользователя</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-gray-800">
+              {user ? (
+                <>
+                  <DropdownMenuItem className="cursor-pointer" asChild>
+                    <Link href="/profile">Мой профиль</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
+                  <DropdownMenuItem className="cursor-pointer" onClick={logout}>
                     Выйти
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Link href="/auth" className="hover:text-red-600 transition-colors">
-                Войти
+                </>
+              ) : (
+                <DropdownMenuItem className="cursor-pointer" asChild>
+                  <Link href="/auth">Войти / Зарегистрироваться</Link>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button className="md:hidden" size="icon" variant="ghost">
+                <MenuIcon className="h-6 w-6" />
+                <span className="sr-only">Переключить навигацию</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="bg-gray-900 text-white">
+              <Link className="flex items-center gap-2 mb-6" href="/">
+                <Image src="/placeholder-logo.png" alt="City Ammu-Nation Logo" width={40} height={40} />
+                <span className="text-lg font-semibold">City Ammu-Nation</span>
               </Link>
-            )}
-          </li>
-        </ul>
-      </nav>
+              <nav className="grid gap-4 text-lg">
+                <Link className="font-medium hover:text-red-400" href="/catalog">
+                  Каталог
+                </Link>
+                <Link className="font-medium hover:text-red-400" href="/shooting-range">
+                  Тир
+                </Link>
+                <Link className="font-medium hover:text-red-400" href="/licensing">
+                  Лицензирование
+                </Link>
+                <Link className="font-medium hover:text-red-400" href="/contacts">
+                  Контакты
+                </Link>
+                <Link className="font-medium hover:text-red-400" href="/vacancies">
+                  Вакансии
+                </Link>
+                {user ? (
+                  <>
+                    <Link className="font-medium hover:text-red-400" href="/profile">
+                      Мой профиль
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      className="justify-start pl-0 text-white hover:text-red-400"
+                      onClick={logout}
+                    >
+                      Выйти
+                    </Button>
+                  </>
+                ) : (
+                  <Link className="font-medium hover:text-red-400" href="/auth">
+                    Войти / Зарегистрироваться
+                  </Link>
+                )}
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
     </header>
   )
 }

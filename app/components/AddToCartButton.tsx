@@ -1,41 +1,48 @@
 "use client"
 
-import { ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useCart } from "../context/CartContext"
+import { useCart } from "@/app/context/CartContext"
 import { toast } from "@/hooks/use-toast"
 
 interface AddToCartButtonProps {
-  item: {
-    id: string
-    name: string
-    price: number
-    image: string
-    category: string
-    ammoPrice?: number
-    ammoPackSize?: number
-  }
-  isAmmoOnly?: boolean
+  productId: string
+  name: string
+  price: number
+  quantity: number
+  ammoQuantity?: number
+  ammoPrice?: number
 }
 
-export default function AddToCartButton({ item, isAmmoOnly }: AddToCartButtonProps) {
-  const { dispatch } = useCart()
+export function AddToCartButton({ productId, name, price, quantity, ammoQuantity, ammoPrice }: AddToCartButtonProps) {
+  const { addToCart } = useCart()
 
   const handleAddToCart = () => {
-    dispatch({ type: "ADD_ITEM", payload: item })
-    const toastDescription = isAmmoOnly ? `${item.name} добавлены в корзину` : `${item.name} добавлен в корзину`
+    if (quantity <= 0) {
+      toast({
+        title: "Ошибка",
+        description: "Количество должно быть больше 0.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    addToCart({
+      id: productId,
+      name,
+      price,
+      quantity,
+      ammoQuantity,
+      ammoPrice,
+    })
     toast({
-      title: "Товар добавлен в корзину",
-      description: toastDescription,
+      title: "Добавлено в корзину",
+      description: `${quantity}x ${name} ${ammoQuantity ? `и ${ammoQuantity} пачек патронов` : ""}`,
     })
   }
 
-  const buttonText = isAmmoOnly ? "Патроны в корзину" : "В корзину"
-
   return (
-    <Button onClick={handleAddToCart} size="sm" className="bg-red-600 hover:bg-red-700 text-white">
-      <ShoppingCart className="h-4 w-4 mr-1" />
-      {buttonText}
+    <Button onClick={handleAddToCart} className="w-full bg-red-600 hover:bg-red-700">
+      Добавить в корзину
     </Button>
   )
 }

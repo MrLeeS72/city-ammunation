@@ -1,202 +1,181 @@
-import Header from "../components/Header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DollarSign, Clock, Users, Shield, Phone } from "lucide-react"
+"use client"
 
-const vacancies = [
-  {
-    title: "Продавец-консультант",
-    salary: "$7,000 - $13,000",
-    schedule: "Гибкий рабочий график",
-    experience: "От 1 года",
-    icon: Users,
-    requirements: [
-      "Опыт работы в сфере продаж от 1 года",
-      "Знание ассортимента оружия и боеприпасов",
-      "Коммуникабельность и клиентоориентированность",
-      "Наличие лицензии на работу с оружием (приветствуется)",
-      "Чистая репутация и отсутствие судимостей",
-    ],
-    responsibilities: [
-      "Консультирование клиентов по выбору оружия",
-      "Оформление документов на продажу",
-      "Ведение учета товара",
-      "Поддержание порядка в торговом зале",
-      "Соблюдение мер безопасности",
-    ],
-    conditions: [
-      "Официальное трудоустройство",
-      "Медицинская страховка",
-      "Обучение за счет компании",
-      "Премии за выполнение плана",
-      "Корпоративные скидки на товары",
-    ],
-  },
-  {
-    title: "Инструктор по стрельбе",
-    salary: "$8,000 - $15,000",
-    schedule: "Гибкий рабочий график",
-    experience: "От 3 лет",
-    icon: Shield,
-    requirements: [
-      "Опыт инструкторской деятельности от 3 лет",
-      "Сертификат инструктора по стрельбе",
-      "Отличное знание техники безопасности",
-      "Педагогические навыки",
-      "Физическая подготовка",
-    ],
-    responsibilities: [
-      "Проведение занятий в тире",
-      "Обучение клиентов технике стрельбы",
-      "Контроль соблюдения техники безопасности",
-      "Подготовка к экзаменам на лицензию",
-      "Ведение документации",
-    ],
-    conditions: [
-      "Гибкий график работы",
-      "Высокая заработная плата",
-      "Профессиональное развитие",
-      "Современное оборудование",
-      "Дружный коллектив",
-    ],
-  },
-]
-export default function Vacancies() {
+import type React from "react"
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useState } from "react"
+import Header from "../components/Header"
+
+export default function VacanciesPage() {
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    position: "",
+    experience: "",
+    skills: "",
+    coverLetter: "",
+    agreeTerms: false,
+  })
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: value })
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData({ ...formData, [name]: value })
+  }
+
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setFormData({ ...formData, [name]: checked })
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log("Заявка на вакансию:", formData)
+    // Здесь можно добавить логику отправки данных, например, на API
+    alert("Ваша заявка отправлена! Мы свяжемся с вами в ближайшее время.")
+    setFormData({
+      name: "",
+      phone: "",
+      email: "",
+      position: "",
+      experience: "",
+      skills: "",
+      coverLetter: "",
+      agreeTerms: false,
+    })
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
-      <main className="flex-grow container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-6 text-red-600 text-center">Вакансии</h1>
+      <main className="flex-grow container mx-auto px-4 py-8 pt-24">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6 text-red-600 text-center">Вакансии</h1>
 
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">Присоединяйтесь к команде City Ammu-Nation!</h2>
-          <p className="text-gray-600 mb-4">
-            Мы ищем профессионалов, которые разделяют наши ценности и готовы развиваться вместе с компанией. City
-            Ammu-Nation предлагает стабильную работу, конкурентную заработную плату и возможности для карьерного роста.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            <div className="flex flex-col items-center">
-              <DollarSign className="h-8 w-8 text-red-600 mb-2" />
-              <span className="font-semibold">Конкурентная зарплата</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <Clock className="h-8 w-8 text-red-600 mb-2" />
-              <span className="font-semibold">Гибкий график</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <Users className="h-8 w-8 text-red-600 mb-2" />
-              <span className="font-semibold">Дружный коллектив</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {vacancies.map((vacancy, index) => (
-            <Card key={index} className="h-full">
-              <CardHeader>
-                <CardTitle className="flex items-center text-xl">
-                  <vacancy.icon className="mr-3 h-6 w-6 text-red-600" />
-                  {vacancy.title}
-                </CardTitle>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                  <span className="flex items-center">
-                    <DollarSign className="mr-1 h-4 w-4" />
-                    {vacancy.salary}
-                  </span>
-                  <span className="flex items-center">
-                    <Clock className="mr-1 h-4 w-4" />
-                    {vacancy.schedule}
-                  </span>
-                  <span>Опыт: {vacancy.experience}</span>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2">Требования:</h4>
-                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                    {vacancy.requirements.map((req, reqIndex) => (
-                      <li key={reqIndex}>{req}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2">Обязанности:</h4>
-                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                    {vacancy.responsibilities.map((resp, respIndex) => (
-                      <li key={respIndex}>{resp}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2">Условия:</h4>
-                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                    {vacancy.conditions.map((cond, condIndex) => (
-                      <li key={condIndex}>{cond}</li>
-                    ))}
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Phone className="mr-2 h-5 w-5 text-red-600" />
-              Как подать заявку
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-gray-600">
-                Для подачи заявки на любую из представленных вакансий, пожалуйста, свяжитесь с нами одним из удобных
-                способов:
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold mb-2">Контактные телефоны:</h4>
-                  <ul className="space-y-1 text-gray-600">
-                    <li>Jerry — 735-2879</li>
-                    <li>Jared — 262-7153</li>
-                    <li>Gracie — 658-0651</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-2">Адрес офиса:</h4>
-                  <p className="text-gray-600">
-                    Cypress Flats, Popular Street, 9275
-                    <br />
-                    Прием резюме: Пн-Пт с 9:00 до 18:00
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-center mt-6">
-                <a
-                  href="https://forms.gle/gWYzHUt8sEqhhkas8"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 transition-colors font-semibold text-center inline-block"
-                >
-                  Подача заявок онлайн
-                </a>
-              </div>
-
-              <div className="bg-red-50 p-4 rounded-lg">
-                <p className="text-sm text-red-800">
-                  <strong>Важно:</strong> При подаче заявки обязательно укажите желаемую вакансию и приложите резюме.
-                  Все кандидаты проходят проверку службы безопасности в соответствии с требованиями законодательства.
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Открытые вакансии</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-lg">Продавец-консультант</h3>
+                <p className="text-gray-700 text-sm">
+                  Требования: опыт работы в продажах, знание ассортимента оружия, коммуникабельность.
                 </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </main>
+              <div>
+                <h3 className="font-semibold text-lg">Инструктор тира</h3>
+                <p className="text-gray-700 text-sm">
+                  Требования: опыт работы инструктором, действующая лицензия на оружие, умение обучать.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">Специалист по лицензированию</h3>
+                <p className="text-gray-700 text-sm">
+                  Требования: знание законодательства об оружии, опыт работы с документами, внимательность.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Подать заявку</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Ваше имя</Label>
+                <Input id="name" name="name" value={formData.name} onChange={handleInputChange} required />
+              </div>
+              <div>
+                <Label htmlFor="phone">Номер телефона</Label>
+                <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} required />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="email">Email (необязательно)</Label>
+                <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} />
+              </div>
+              <div>
+                <Label htmlFor="position">Интересующая позиция</Label>
+                <Select
+                  name="position"
+                  value={formData.position}
+                  onValueChange={(value) => handleSelectChange("position", value)}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите позицию" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sales_consultant">Продавец-консультант</SelectItem>
+                    <SelectItem value="range_instructor">Инструктор тира</SelectItem>
+                    <SelectItem value="licensing_specialist">Специалист по лицензированию</SelectItem>
+                    <SelectItem value="other">Другое</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="experience">Опыт работы (лет)</Label>
+                <Input
+                  id="experience"
+                  name="experience"
+                  type="number"
+                  value={formData.experience}
+                  onChange={handleInputChange}
+                  min="0"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="skills">Ключевые навыки</Label>
+                <Textarea
+                  id="skills"
+                  name="skills"
+                  value={formData.skills}
+                  onChange={handleInputChange}
+                  placeholder="Перечислите ваши основные навыки, релевантные для вакансии."
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="coverLetter">Сопроводительное письмо (необязательно)</Label>
+                <Textarea
+                  id="coverLetter"
+                  name="coverLetter"
+                  value={formData.coverLetter}
+                  onChange={handleInputChange}
+                  placeholder="Расскажите о себе и почему вы хотите работать у нас."
+                  rows={5}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="mb-6">
+            <CardContent className="flex flex-col space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="agreeTerms"
+                  checked={formData.agreeTerms}
+                  onCheckedChange={(checked) => handleCheckboxChange("agreeTerms", !!checked)}
+                  required
+                />
+                <Label htmlFor="agreeTerms">Я согласен с обработкой персональных данных</Label>
+              </div>
+              <Button type="submit" onClick={handleSubmit} className="w-full bg-red-600 hover:bg-red-700">
+                Отправить заявку
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
       <footer className="bg-gray-800 text-white py-4 text-center">
         <p>&copy; 2025 City Ammu-Nation. Все права защищены.</p>
       </footer>

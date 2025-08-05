@@ -13,6 +13,7 @@ interface User {
   postalCode?: string // Discord username
   avatarUrl?: string
   licenses: string[]
+  createdAt: string
 }
 
 interface OrderItem {
@@ -40,8 +41,10 @@ interface AuthContextType {
   loading: boolean
   error: string | null
   login: (phone: string) => Promise<boolean>
-  register: (userData: Omit<User, "id" | "licenses" | "avatarUrl">) => Promise<boolean>
-  updateProfile: (userData: Partial<Omit<User, "id" | "phone">>) => Promise<boolean>
+  register: (
+    userData: Omit<User, "id" | "licenses" | "avatarUrl" | "createdAt"> & { avatarUrl?: string },
+  ) => Promise<boolean>
+  updateProfile: (userData: Partial<Omit<User, "id" | "phone" | "createdAt">>) => Promise<boolean>
   addOrder: (items: OrderItem[], total: number, telegramMessageId?: string) => Promise<boolean>
   addLicense: (license: string) => Promise<boolean>
   removeLicense: (license: string) => Promise<boolean>
@@ -84,7 +87,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data) {
-        setUser(data)
+        const fetchedUser: User = {
+          id: data.id,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          phone: data.phone,
+          idCard: data.idCard || "",
+          postalCode: data.postalCode || "",
+          avatarUrl: data.avatar_url || "", // Map from snake_case to camelCase
+          licenses: data.licenses || [],
+          createdAt: data.createdAt,
+        }
+        setUser(fetchedUser)
+
         const { data: userOrders, error: ordersError } = await supabase
           .from("orders")
           .select("*")
@@ -130,7 +145,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(`Ошибка входа: ${userError.message}`)
       }
 
-      setUser(data)
+      const loggedInUser: User = {
+        id: data.id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        idCard: data.idCard || "",
+        postalCode: data.postalCode || "",
+        avatarUrl: data.avatar_url || "", // Map from snake_case to camelCase
+        licenses: data.licenses || [],
+        createdAt: data.createdAt,
+      }
+      setUser(loggedInUser)
       localStorage.setItem("userPhone", phone)
       await loadUserAndOrders() // Reload orders for the logged-in user
       return true
@@ -143,7 +169,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const register = async (userData: Omit<User, "id" | "licenses" | "avatarUrl">): Promise<boolean> => {
+  const register = async (
+    userData: Omit<User, "id" | "licenses" | "createdAt"> & { avatarUrl?: string },
+  ): Promise<boolean> => {
     setLoading(true)
     setError(null)
     try {
@@ -168,7 +196,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           idCard: userData.idCard || null,
           postalCode: userData.postalCode || null,
           licenses: [], // New users start with no licenses
-          avatarUrl: userData.avatarUrl || null,
+          avatar_url: userData.avatarUrl || null, // Use snake_case for DB column
         })
         .select()
         .single()
@@ -177,7 +205,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(`Ошибка регистрации: ${insertError.message}`)
       }
 
-      setUser(data)
+      const newUser: User = {
+        id: data.id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        idCard: data.idCard || "",
+        postalCode: data.postalCode || "",
+        avatarUrl: data.avatar_url || "", // Map from snake_case to camelCase
+        licenses: data.licenses || [],
+        createdAt: data.createdAt,
+      }
+      setUser(newUser)
       localStorage.setItem("userPhone", userData.phone)
       await loadUserAndOrders() // Reload orders for the newly registered user
       return true
@@ -190,7 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const updateProfile = async (userData: Partial<Omit<User, "id" | "phone">>): Promise<boolean> => {
+  const updateProfile = async (userData: Partial<Omit<User, "id" | "phone" | "createdAt">>): Promise<boolean> => {
     if (!user) {
       setError("Пользователь не авторизован.")
       return false
@@ -198,9 +237,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true)
     setError(null)
     try {
+      const updateData: { [key: string]: any } = {}
+      if (userData.firstName !== undefined) updateData.firstName = userData.firstName
+      if (userData.lastName !== undefined) updateData.lastName = userData.lastName
+      if (userData.idCard !== undefined) updateData.idCard = userData.idCard
+      if (userData.postalCode !== undefined) updateData.postalCode = userData.postalCode
+      if (userData.avatarUrl !== undefined) updateData.avatar_url = userData.avatarUrl // Use snake_case for DB column
+      if (userData.licenses !== undefined) updateData.licenses = userData.licenses
+
       const { data, error: updateError } = await supabase
         .from("users")
-        .update(userData)
+        .update(updateData)
         .eq("id", user.id)
         .select()
         .single()
@@ -209,7 +256,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(`Ошибка обновления профиля: ${updateError.message}`)
       }
 
-      setUser(data)
+      const updatedUser: User = {
+        id: data.id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        idCard: data.idCard || "",
+        postalCode: data.postalCode || "",
+        avatarUrl: data.avatar_url || "", // Map from snake_case to camelCase
+        licenses: data.licenses || [],
+        createdAt: data.createdAt,
+      }
+      setUser(updatedUser)
       return true
     } catch (err: any) {
       console.error("Profile update error:", err)
@@ -277,7 +335,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(`Ошибка добавления лицензии: ${updateError.message}`)
       }
 
-      setUser(data)
+      const updatedUser: User = {
+        id: data.id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        idCard: data.idCard || "",
+        postalCode: data.postalCode || "",
+        avatarUrl: data.avatar_url || "", // Map from snake_case to camelCase
+        licenses: data.licenses || [],
+        createdAt: data.createdAt,
+      }
+      setUser(updatedUser)
       return true
     } catch (err: any) {
       console.error("Add license error:", err)
@@ -308,7 +377,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(`Ошибка удаления лицензии: ${updateError.message}`)
       }
 
-      setUser(data)
+      const updatedUser: User = {
+        id: data.id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        idCard: data.idCard || "",
+        postalCode: data.postalCode || "",
+        avatarUrl: data.avatar_url || "", // Map from snake_case to camelCase
+        licenses: data.licenses || [],
+        createdAt: data.createdAt,
+      }
+      setUser(updatedUser)
       return true
     } catch (err: any) {
       console.error("Remove license error:", err)

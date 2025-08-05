@@ -4,25 +4,25 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Создать таблицу пользователей
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL,
+  firstName TEXT NOT NULL, -- Changed from first_name
+  lastName TEXT NOT NULL,  -- Changed from last_name
   phone TEXT UNIQUE NOT NULL,
-  id_card TEXT,
-  postal_code TEXT NOT NULL, -- Discord nickname
-  avatar_url TEXT,
+  idCard TEXT,
+  postalCode TEXT, -- Changed from postal_code (Discord nickname)
+  avatar_url TEXT, -- Kept as snake_case for DB
   licenses TEXT[], -- Массив строк для лицензий
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW() -- Changed from created_at
 );
 
 -- Создать таблицу заказов
 CREATE TABLE orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  userId UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Changed from user_id
   items JSONB NOT NULL, -- Хранить массив товаров корзины как JSON
   total NUMERIC NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending',
-  telegram_message_id TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  telegramMessageId TEXT, -- Changed from telegram_message_id
+  createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW() -- Changed from created_at
 );
 
 -- Дополнительно: Для продакшена рекомендуется настроить политики RLS (Row Level Security)
