@@ -4,8 +4,9 @@ export async function POST(request: NextRequest) {
   try {
     const orderData = await request.json()
 
-    const botToken = process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN
-    const chatId = process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID
+    // Изменено: удален NEXT_PUBLIC_ префикс
+    const botToken = process.env.TELEGRAM_BOT_TOKEN
+    const chatId = process.env.TELEGRAM_CHAT_ID
 
     if (!botToken || !chatId) {
       return NextResponse.json({ error: "Telegram configuration missing" }, { status: 500 })

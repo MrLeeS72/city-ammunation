@@ -1,319 +1,337 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useEffect, useCallback } from "react"
-import { supabase } from "@/lib/supabase/client" // Import Supabase client
+import { createContext, useState, useContext, useEffect, useCallback } from "react"
+import { getSupabaseClient } from "@/lib/supabase/client"
 
-export interface User {
+interface User {
   id: string
   firstName: string
   lastName: string
   phone: string
-  idCard: string
-  postalCode: string
-  avatar?: string
+  idCard?: string
+  postalCode?: string // Discord username
+  avatarUrl?: string
   licenses: string[]
-  createdAt: string
 }
 
-export interface Order {
+interface OrderItem {
+  id: string
+  name: string
+  price: number
+  quantity: number
+  ammoQuantity?: number
+  ammoPrice?: number
+}
+
+interface Order {
   id: string
   userId: string
-  items: Array<{
-    name: string
-    quantity: number
-    price: number
-    ammoQuantity?: number
-    ammoPrice?: number
-  }>
+  items: OrderItem[]
   total: number
-  status: "pending" | "confirmed" | "completed" | "cancelled"
-  createdAt: string
+  status: string
   telegramMessageId?: string
-}
-
-interface AuthState {
-  user: User | null
-  orders: Order[]
-  isLoading: boolean
+  createdAt: string
 }
 
 interface AuthContextType {
   user: User | null
   orders: Order[]
-  isLoading: boolean
+  loading: boolean
+  error: string | null
   login: (phone: string) => Promise<boolean>
-  register: (userData: Omit<User, "id" | "createdAt" | "avatar" | "licenses">) => Promise<boolean>
-  logout: () => void
-  updateProfile: (userData: Partial<User>) => Promise<boolean>
-  addOrder: (order: Omit<Order, "id" | "userId" | "createdAt">) => void
+  register: (userData: Omit<User, "id" | "licenses" | "avatarUrl">) => Promise<boolean>
+  updateProfile: (userData: Partial<Omit<User, "id" | "phone">>) => Promise<boolean>
+  addOrder: (items: OrderItem[], total: number, telegramMessageId?: string) => Promise<boolean>
+  addLicense: (license: string) => Promise<boolean>
+  removeLicense: (license: string) => Promise<boolean>
 }
 
-const AuthContext = createContext<AuthContextType | null>(null)
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    orders: [],
-    isLoading: true,
-  })
+  const [user, setUser] = useState<User | null>(null)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const supabase = getSupabaseClient()
 
-  const fetchUserData = useCallback(async (phone: string) => {
+  const loadUserAndOrders = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     try {
-      const { data: users, error: userError } = await supabase.from("users").select("*").eq("phone", phone).single()
-
-      if (userError && userError.code !== "PGRST116") {
-        // PGRST116 means no rows found
-        console.error("Error fetching user:", userError)
-        return null
+      const storedPhone = localStorage.getItem("userPhone")
+      if (!storedPhone) {
+        setUser(null)
+        setOrders([])
+        setLoading(false)
+        return
       }
 
-      if (users) {
-        const user: User = {
-          id: users.id,
-          firstName: users.first_name,
-          lastName: users.last_name,
-          phone: users.phone,
-          idCard: users.id_card || "",
-          postalCode: users.postal_code,
-          avatar: users.avatar_url || "",
-          licenses: users.licenses || [],
-          createdAt: users.created_at,
-        }
+      const { data, error: userError } = await supabase.from("users").select("*").eq("phone", storedPhone).single()
 
-        const { data: orders, error: ordersError } = await supabase
+      if (userError && userError.code === "PGRST116") {
+        // No rows found
+        setUser(null)
+        setOrders([])
+        localStorage.removeItem("userPhone")
+        setLoading(false)
+        return
+      }
+
+      if (userError) {
+        throw new Error(`Failed to fetch user: ${userError.message}`)
+      }
+
+      if (data) {
+        setUser(data)
+        const { data: userOrders, error: ordersError } = await supabase
           .from("orders")
           .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
+          .eq("userId", data.id)
+          .order("createdAt", { ascending: false })
 
         if (ordersError) {
-          console.error("Error fetching orders:", ordersError)
-          return { user, orders: [] }
+          throw new Error(`Failed to fetch orders: ${ordersError.message}`)
         }
-
-        const userOrders: Order[] = orders.map((order: any) => ({
-          id: order.id,
-          userId: order.user_id,
-          items: order.items,
-          total: order.total,
-          status: order.status,
-          telegramMessageId: order.telegram_message_id,
-          createdAt: order.created_at,
-        }))
-
-        return { user, orders: userOrders }
+        setOrders(userOrders || [])
+      } else {
+        setUser(null)
+        setOrders([])
+        localStorage.removeItem("userPhone")
       }
-      return null
-    } catch (error) {
-      console.error("Unexpected error in fetchUserData:", error)
-      return null
+    } catch (err: any) {
+      console.error("Error fetching user:", err)
+      setError(err.message || "Failed to load user data.")
+      setUser(null)
+      setOrders([])
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
-    const loadUserAndOrders = async () => {
-      const loggedInUserPhone = localStorage.getItem("loggedInUserPhone")
-      if (loggedInUserPhone) {
-        const data = await fetchUserData(loggedInUserPhone)
-        if (data) {
-          setState({ user: data.user, orders: data.orders, isLoading: false })
-        } else {
-          localStorage.removeItem("loggedInUserPhone") // Clear invalid session
-          setState({ user: null, orders: [], isLoading: false })
-        }
-      } else {
-        setState({ user: null, orders: [], isLoading: false })
-      }
-    }
     loadUserAndOrders()
-  }, [fetchUserData])
+  }, [loadUserAndOrders])
 
   const login = async (phone: string): Promise<boolean> => {
-    setState((prev) => ({ ...prev, isLoading: true }))
+    setLoading(true)
+    setError(null)
     try {
-      const data = await fetchUserData(phone)
-      if (data) {
-        localStorage.setItem("loggedInUserPhone", phone)
-        setState({ user: data.user, orders: data.orders, isLoading: false })
-        return true
+      const { data, error: userError } = await supabase.from("users").select("*").eq("phone", phone).single()
+
+      if (userError && userError.code === "PGRST116") {
+        // No rows found
+        setError("Пользователь с таким номером телефона не найден.")
+        return false
       }
+
+      if (userError) {
+        throw new Error(`Ошибка входа: ${userError.message}`)
+      }
+
+      setUser(data)
+      localStorage.setItem("userPhone", phone)
+      await loadUserAndOrders() // Reload orders for the logged-in user
+      return true
+    } catch (err: any) {
+      console.error("Login error:", err)
+      setError(err.message || "Ошибка входа.")
       return false
     } finally {
-      setState((prev) => ({ ...prev, isLoading: false }))
+      setLoading(false)
     }
   }
 
-  const register = async (userData: Omit<User, "id" | "createdAt" | "avatar" | "licenses">): Promise<boolean> => {
-    setState((prev) => ({ ...prev, isLoading: true }))
+  const register = async (userData: Omit<User, "id" | "licenses" | "avatarUrl">): Promise<boolean> => {
+    setLoading(true)
+    setError(null)
     try {
-      // Check if phone number already exists
-      const { data: existingUser, error: checkError } = await supabase
+      // Check if user with this phone already exists
+      const { data: existingUser, error: existingUserError } = await supabase
         .from("users")
         .select("id")
         .eq("phone", userData.phone)
         .single()
 
-      if (checkError && checkError.code !== "PGRST116") {
-        // PGRST116 means no rows found
-        console.error("Error checking existing user:", checkError)
+      if (existingUser && !existingUserError) {
+        setError("Пользователь с таким номером телефона уже зарегистрирован.")
         return false
       }
 
-      if (existingUser) {
-        return false // Phone number already registered
-      }
-
-      const { data, error } = await supabase
+      const { data, error: insertError } = await supabase
         .from("users")
         .insert({
-          first_name: userData.firstName,
-          last_name: userData.lastName,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
           phone: userData.phone,
-          id_card: userData.idCard || null,
-          postal_code: userData.postalCode,
-          avatar_url: null,
-          licenses: [],
+          idCard: userData.idCard || null,
+          postalCode: userData.postalCode || null,
+          licenses: [], // New users start with no licenses
+          avatarUrl: userData.avatarUrl || null,
         })
         .select()
         .single()
 
-      if (error) {
-        console.error("Error registering user:", error)
-        return false
+      if (insertError) {
+        throw new Error(`Ошибка регистрации: ${insertError.message}`)
       }
 
-      const newUser: User = {
-        id: data.id,
-        firstName: data.first_name,
-        lastName: data.last_name,
-        phone: data.phone,
-        idCard: data.id_card || "",
-        postalCode: data.postal_code,
-        avatar: data.avatar_url || "",
-        licenses: data.licenses || [],
-        createdAt: data.created_at,
-      }
-
-      localStorage.setItem("loggedInUserPhone", newUser.phone)
-      setState({ user: newUser, orders: [], isLoading: false })
+      setUser(data)
+      localStorage.setItem("userPhone", userData.phone)
+      await loadUserAndOrders() // Reload orders for the newly registered user
       return true
-    } catch (error) {
-      console.error("Unexpected error during registration:", error)
+    } catch (err: any) {
+      console.error("Registration error:", err)
+      setError(err.message || "Ошибка регистрации.")
       return false
     } finally {
-      setState((prev) => ({ ...prev, isLoading: false }))
+      setLoading(false)
     }
   }
 
-  const logout = () => {
-    localStorage.removeItem("loggedInUserPhone")
-    setState({ user: null, orders: [], isLoading: false })
-  }
-
-  const updateProfile = async (userData: Partial<User>): Promise<boolean> => {
-    if (!state.user) return false
-    setState((prev) => ({ ...prev, isLoading: true }))
-
+  const updateProfile = async (userData: Partial<Omit<User, "id" | "phone">>): Promise<boolean> => {
+    if (!user) {
+      setError("Пользователь не авторизован.")
+      return false
+    }
+    setLoading(true)
+    setError(null)
     try {
-      const { data, error } = await supabase
+      const { data, error: updateError } = await supabase
         .from("users")
-        .update({
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          phone: userData.phone,
-          id_card: userData.idCard,
-          postal_code: userData.postalCode,
-          avatar_url: userData.avatar,
-          licenses: userData.licenses,
-        })
-        .eq("id", state.user.id)
+        .update(userData)
+        .eq("id", user.id)
         .select()
         .single()
 
-      if (error) {
-        console.error("Error updating profile:", error)
-        return false
+      if (updateError) {
+        throw new Error(`Ошибка обновления профиля: ${updateError.message}`)
       }
 
-      const updatedUser: User = {
-        id: data.id,
-        firstName: data.first_name,
-        lastName: data.last_name,
-        phone: data.phone,
-        idCard: data.id_card || "",
-        postalCode: data.postal_code,
-        avatar: data.avatar_url || "",
-        licenses: data.licenses || [],
-        createdAt: data.created_at,
-      }
-
-      // If phone number changed, update localStorage
-      if (updatedUser.phone !== state.user.phone) {
-        localStorage.setItem("loggedInUserPhone", updatedUser.phone)
-      }
-
-      setState((prev) => ({ ...prev, user: updatedUser, isLoading: false }))
+      setUser(data)
       return true
-    } catch (error) {
-      console.error("Unexpected error during profile update:", error)
+    } catch (err: any) {
+      console.error("Profile update error:", err)
+      setError(err.message || "Ошибка обновления профиля.")
       return false
     } finally {
-      setState((prev) => ({ ...prev, isLoading: false }))
+      setLoading(false)
     }
   }
 
-  const addOrder = async (orderData: Omit<Order, "id" | "userId" | "createdAt">) => {
-    if (!state.user) return
-
-    setState((prev) => ({ ...prev, isLoading: true }))
+  const addOrder = async (items: OrderItem[], total: number, telegramMessageId?: string): Promise<boolean> => {
+    if (!user) {
+      setError("Для оформления заказа необходимо войти в систему.")
+      return false
+    }
+    setLoading(true)
+    setError(null)
     try {
-      const { data, error } = await supabase
-        .from("orders")
-        .insert({
-          user_id: state.user.id,
-          items: orderData.items,
-          total: orderData.total,
-          status: orderData.status,
-          telegram_message_id: orderData.telegramMessageId || null,
-        })
+      const newOrder: Omit<Order, "id" | "createdAt"> = {
+        userId: user.id,
+        items: items,
+        total: total,
+        status: "pending", // Default status
+        telegramMessageId: telegramMessageId || null,
+      }
+
+      const { data, error: orderError } = await supabase.from("orders").insert(newOrder).select().single()
+
+      if (orderError) {
+        throw new Error(`Ошибка оформления заказа: ${orderError.message}`)
+      }
+
+      setOrders((prevOrders) => [data, ...prevOrders])
+      return true
+    } catch (err: any) {
+      console.error("Order creation error:", err)
+      setError(err.message || "Ошибка оформления заказа.")
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const addLicense = async (license: string): Promise<boolean> => {
+    if (!user) {
+      setError("Пользователь не авторизован.")
+      return false
+    }
+    if (user.licenses.includes(license)) {
+      setError("Эта лицензия уже добавлена.")
+      return false
+    }
+    setLoading(true)
+    setError(null)
+    try {
+      const updatedLicenses = [...user.licenses, license]
+      const { data, error: updateError } = await supabase
+        .from("users")
+        .update({ licenses: updatedLicenses })
+        .eq("id", user.id)
         .select()
         .single()
 
-      if (error) {
-        console.error("Error adding order:", error)
-        return
+      if (updateError) {
+        throw new Error(`Ошибка добавления лицензии: ${updateError.message}`)
       }
 
-      const newOrder: Order = {
-        id: data.id,
-        userId: data.user_id,
-        items: data.items,
-        total: data.total,
-        status: data.status,
-        telegramMessageId: data.telegram_message_id,
-        createdAt: data.created_at,
-      }
-
-      setState((prev) => ({ ...prev, orders: [newOrder, ...prev.orders], isLoading: false }))
-    } catch (error) {
-      console.error("Unexpected error adding order:", error)
+      setUser(data)
+      return true
+    } catch (err: any) {
+      console.error("Add license error:", err)
+      setError(err.message || "Ошибка добавления лицензии.")
+      return false
     } finally {
-      setState((prev) => ({ ...prev, isLoading: false }))
+      setLoading(false)
+    }
+  }
+
+  const removeLicense = async (license: string): Promise<boolean> => {
+    if (!user) {
+      setError("Пользователь не авторизован.")
+      return false
+    }
+    setLoading(true)
+    setError(null)
+    try {
+      const updatedLicenses = user.licenses.filter((l) => l !== license)
+      const { data, error: updateError } = await supabase
+        .from("users")
+        .update({ licenses: updatedLicenses })
+        .eq("id", user.id)
+        .select()
+        .single()
+
+      if (updateError) {
+        throw new Error(`Ошибка удаления лицензии: ${updateError.message}`)
+      }
+
+      setUser(data)
+      return true
+    } catch (err: any) {
+      console.error("Remove license error:", err)
+      setError(err.message || "Ошибка удаления лицензии.")
+      return false
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <AuthContext.Provider
       value={{
-        user: state.user,
-        orders: state.orders,
-        isLoading: state.isLoading,
+        user,
+        orders,
+        loading,
+        error,
         login,
         register,
-        logout,
         updateProfile,
         addOrder,
+        addLicense,
+        removeLicense,
       }}
     >
       {children}
@@ -323,7 +341,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
-  if (!context) {
+  if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider")
   }
   return context
